@@ -1,0 +1,283 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+
+const { id } = Astro.params;
+const isNew = id === "new";
+---
+
+<AdminLayout title={isNew ? "Neuer Kunde" : "Kundendetails"}>
+  <div x-data="customerDetail()" x-init="init()">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/customers" class="text-gray-600 hover:text-gray-900">&larr; Zurück</a>
+        <h2 class="text-xl font-semibold" x-text="isNew ? 'Neuer Kunde' : `${customer.firstName} ${customer.lastName}`"></h2>
+      </div>
+      <button
+        @click="save()"
+        :disabled="saving"
+        class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
+      >
+        <span x-show="!saving">Speichern</span>
+        <span x-show="saving">Wird gespeichert...</span>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-3 gap-6">
+      <!-- Main Content -->
+      <div class="col-span-2 space-y-6">
+        <!-- Basic Info -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Stammdaten</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Vorname *</label>
+              <input type="text" x-model="customer.firstName" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Nachname *</label>
+              <input type="text" x-model="customer.lastName" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700">E-Mail *</label>
+              <input type="email" x-model="customer.email" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Telefon</label>
+              <input type="tel" x-model="customer.phone" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Kundennummer</label>
+              <input type="text" x-model="customer.customerNumber" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Addresses -->
+        <div class="rounded-lg bg-white p-6 shadow" x-show="!isNew">
+          <h3 class="mb-4 text-lg font-medium">Adressen</h3>
+          <div class="space-y-4">
+            <template x-for="address in customer.addresses" :key="address.id">
+              <div class="rounded-lg border p-4">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-sm font-medium" x-text="address.type === 'billing' ? 'Rechnungsadresse' : 'Lieferadresse'"></span>
+                  <span x-show="address.isDefault" class="rounded bg-green-100 px-2 py-1 text-xs text-green-800">Standard</span>
+                </div>
+                <div class="text-sm text-gray-600">
+                  <div x-text="`${address.firstName} ${address.lastName}`"></div>
+                  <div x-show="address.company" x-text="address.company"></div>
+                  <div x-text="address.street"></div>
+                  <div x-text="`${address.zip} ${address.city}`"></div>
+                  <div x-text="address.country"></div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="rounded-lg bg-white p-6 shadow" x-show="!isNew && orders.length > 0">
+          <h3 class="mb-4 text-lg font-medium">Bestellungen</h3>
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b">
+                <th class="pb-2 text-left text-sm font-medium text-gray-500">Bestellung</th>
+                <th class="pb-2 text-left text-sm font-medium text-gray-500">Datum</th>
+                <th class="pb-2 text-right text-sm font-medium text-gray-500">Summe</th>
+                <th class="pb-2 text-right text-sm font-medium text-gray-500">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="order in orders" :key="order.id">
+                <tr class="border-b">
+                  <td class="py-2"><a :href="`/orders/${order.id}`" class="text-primary-600 hover:underline" x-text="`#${order.orderNumber}`"></a></td>
+                  <td class="py-2 text-sm text-gray-500" x-text="formatDate(order.createdAt)"></td>
+                  <td class="py-2 text-right text-sm" x-text="formatPrice(order.totalGross)"></td>
+                  <td class="py-2 text-right"><span class="rounded-full px-2 py-1 text-xs" :class="getStatusClass(order.status)" x-text="order.status"></span></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Status -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Status</h3>
+          <select x-model="customer.status" class="block w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="active">Aktiv</option>
+            <option value="inactive">Inaktiv</option>
+          </select>
+        </div>
+
+        <!-- Group -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Kundengruppe</h3>
+          <select x-model="customer.groupId" class="block w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="">Standard</option>
+            <template x-for="group in groups" :key="group.id">
+              <option :value="group.id" x-text="group.name"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- Stats -->
+        <div class="rounded-lg bg-white p-6 shadow" x-show="!isNew">
+          <h3 class="mb-4 text-lg font-medium">Statistiken</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Bestellungen</span>
+              <span class="font-medium" x-text="customer.orderCount || 0"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Gesamtumsatz</span>
+              <span class="font-medium" x-text="formatPrice(customer.totalSpent || 0)"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Registriert</span>
+              <span class="font-medium" x-text="formatDate(customer.createdAt)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Newsletter -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Newsletter</h3>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="customer.newsletter" class="rounded border-gray-300" />
+            <span class="text-sm">Newsletter abonniert</span>
+          </label>
+          <div x-show="customer.newsletterConfirmedAt" class="mt-2 text-xs text-gray-500" x-text="`Bestätigt: ${formatDate(customer.newsletterConfirmedAt)}`"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{ customerId: id, isNewCustomer: isNew }}>
+    function customerDetail() {
+      return {
+        isNew: isNewCustomer,
+        customer: {
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          customerNumber: "",
+          status: "active",
+          groupId: null,
+          newsletter: false,
+          addresses: [],
+        },
+        groups: [],
+        orders: [],
+        saving: false,
+
+        async init() {
+          await this.loadGroups();
+          if (!this.isNew) {
+            await Promise.all([this.loadCustomer(), this.loadOrders()]);
+          }
+        },
+
+        async loadCustomer() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/customer.get?input=${encodeURIComponent(JSON.stringify({ json: { id: customerId } }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              Object.assign(this.customer, data.result?.data?.json || {});
+            }
+          } catch (e) {
+            console.error("Failed to load customer:", e);
+          }
+        },
+
+        async loadGroups() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/customer.listGroups?input=${encodeURIComponent(JSON.stringify({ json: {} }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              this.groups = data.result?.data?.json || [];
+            }
+          } catch (e) {
+            console.error("Failed to load groups:", e);
+          }
+        },
+
+        async loadOrders() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/order.list?input=${encodeURIComponent(JSON.stringify({ json: { customerId: customerId, limit: 10 } }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              this.orders = data.result?.data?.json?.orders || [];
+            }
+          } catch (e) {
+            console.error("Failed to load orders:", e);
+          }
+        },
+
+        async save() {
+          this.saving = true;
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const endpoint = this.isNew ? "customer.create" : "customer.update";
+            const payload = this.isNew ? this.customer : { id: customerId, ...this.customer };
+
+            const response = await fetch(`${API_URL}/trpc/${endpoint}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {}),
+              },
+              body: JSON.stringify({ json: payload }),
+            });
+
+            if (response.ok) {
+              Alpine.store("notifications").add("success", "Kunde gespeichert");
+              if (this.isNew) window.location.href = "/customers";
+            } else {
+              throw new Error("Save failed");
+            }
+          } catch (e) {
+            Alpine.store("notifications").add("error", "Fehler beim Speichern");
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        formatPrice(cents) {
+          return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(cents / 100);
+        },
+
+        formatDate(dateStr) {
+          return dateStr ? new Date(dateStr).toLocaleDateString("de-DE") : "-";
+        },
+
+        getStatusClass(status) {
+          const classes = {
+            pending: "bg-yellow-100 text-yellow-800",
+            processing: "bg-blue-100 text-blue-800",
+            shipped: "bg-purple-100 text-purple-800",
+            delivered: "bg-green-100 text-green-800",
+            cancelled: "bg-red-100 text-red-800",
+          };
+          return classes[status] || "bg-gray-100 text-gray-800";
+        },
+      };
+    }
+  </script>
+</AdminLayout>

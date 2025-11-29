@@ -1,0 +1,256 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+
+const { id } = Astro.params;
+---
+
+<AdminLayout title="Bestelldetails">
+  <div x-data="orderDetail()" x-init="init()">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/orders" class="text-gray-600 hover:text-gray-900">&larr; Zurück</a>
+        <h2 class="text-xl font-semibold" x-text="`Bestellung #${order.orderNumber}`"></h2>
+      </div>
+      <div class="flex gap-3">
+        <button @click="printInvoice()" class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50">
+          Rechnung drucken
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-6">
+      <!-- Main Content -->
+      <div class="col-span-2 space-y-6">
+        <!-- Order Items -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Positionen</h3>
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b">
+                <th class="pb-3 text-left text-sm font-medium text-gray-500">Artikel</th>
+                <th class="pb-3 text-right text-sm font-medium text-gray-500">Menge</th>
+                <th class="pb-3 text-right text-sm font-medium text-gray-500">Preis</th>
+                <th class="pb-3 text-right text-sm font-medium text-gray-500">Gesamt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="item in order.items" :key="item.id">
+                <tr class="border-b">
+                  <td class="py-3">
+                    <div class="font-medium" x-text="item.productName"></div>
+                    <div class="text-sm text-gray-500" x-text="item.sku"></div>
+                  </td>
+                  <td class="py-3 text-right" x-text="item.quantity"></td>
+                  <td class="py-3 text-right" x-text="formatPrice(item.unitPriceGross)"></td>
+                  <td class="py-3 text-right font-medium" x-text="formatPrice(item.totalGross)"></td>
+                </tr>
+              </template>
+            </tbody>
+            <tfoot>
+              <tr class="border-b">
+                <td colspan="3" class="py-2 text-right text-sm text-gray-500">Zwischensumme</td>
+                <td class="py-2 text-right" x-text="formatPrice(order.subtotalGross)"></td>
+              </tr>
+              <tr class="border-b">
+                <td colspan="3" class="py-2 text-right text-sm text-gray-500">Versand</td>
+                <td class="py-2 text-right" x-text="formatPrice(order.shippingGross)"></td>
+              </tr>
+              <template x-if="order.discountTotal">
+                <tr class="border-b">
+                  <td colspan="3" class="py-2 text-right text-sm text-gray-500">Rabatt</td>
+                  <td class="py-2 text-right text-green-600" x-text="'- ' + formatPrice(order.discountTotal)"></td>
+                </tr>
+              </template>
+              <tr>
+                <td colspan="3" class="py-3 text-right font-medium">Gesamt</td>
+                <td class="py-3 text-right text-lg font-bold" x-text="formatPrice(order.totalGross)"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Addresses -->
+        <div class="grid grid-cols-2 gap-6">
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h3 class="mb-4 text-lg font-medium">Rechnungsadresse</h3>
+            <div class="text-sm text-gray-600" x-html="formatAddress(order.billingAddress)"></div>
+          </div>
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h3 class="mb-4 text-lg font-medium">Lieferadresse</h3>
+            <div class="text-sm text-gray-600" x-html="formatAddress(order.shippingAddress)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Status -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Status</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Bestellstatus</label>
+              <select
+                x-model="order.status"
+                @change="updateStatus()"
+                class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+              >
+                <option value="pending">Ausstehend</option>
+                <option value="processing">In Bearbeitung</option>
+                <option value="shipped">Versendet</option>
+                <option value="delivered">Zugestellt</option>
+                <option value="cancelled">Storniert</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Zahlungsstatus</label>
+              <select
+                x-model="order.paymentStatus"
+                @change="updatePaymentStatus()"
+                class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+              >
+                <option value="pending">Offen</option>
+                <option value="paid">Bezahlt</option>
+                <option value="refunded">Erstattet</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Kunde</h3>
+          <div class="space-y-2 text-sm">
+            <div x-text="order.customerName || 'Gast'"></div>
+            <div class="text-gray-500" x-text="order.email"></div>
+            <div x-show="order.customerId">
+              <a :href="`/customers/${order.customerId}`" class="text-primary-600 hover:underline">Kundenprofil</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment & Shipping -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Zahlung & Versand</h3>
+          <div class="space-y-3 text-sm">
+            <div>
+              <span class="text-gray-500">Zahlungsart:</span>
+              <span x-text="order.paymentMethodName || '-'"></span>
+            </div>
+            <div>
+              <span class="text-gray-500">Versandart:</span>
+              <span x-text="order.shippingMethodName || '-'"></span>
+            </div>
+            <div x-show="order.trackingNumber">
+              <span class="text-gray-500">Tracking:</span>
+              <span x-text="order.trackingNumber"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="rounded-lg bg-white p-6 shadow">
+          <h3 class="mb-4 text-lg font-medium">Notizen</h3>
+          <textarea
+            x-model="order.internalNotes"
+            @blur="updateNotes()"
+            rows="4"
+            placeholder="Interne Notizen..."
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{ orderId: id }}>
+    function orderDetail() {
+      return {
+        order: {
+          orderNumber: "",
+          status: "pending",
+          paymentStatus: "pending",
+          items: [],
+          billingAddress: null,
+          shippingAddress: null,
+          totalGross: 0,
+          subtotalGross: 0,
+          shippingGross: 0,
+        },
+        loading: true,
+
+        async init() {
+          await this.loadOrder();
+        },
+
+        async loadOrder() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/order.get?input=${encodeURIComponent(JSON.stringify({ json: { id: orderId } }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              Object.assign(this.order, data.result?.data?.json || {});
+            }
+          } catch (e) {
+            console.error("Failed to load order:", e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        formatPrice(cents) {
+          return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format((cents || 0) / 100);
+        },
+
+        formatAddress(addr) {
+          if (!addr) return "-";
+          return [
+            `${addr.firstName} ${addr.lastName}`,
+            addr.company,
+            addr.street,
+            `${addr.zip} ${addr.city}`,
+            addr.country,
+          ].filter(Boolean).join("<br>");
+        },
+
+        async updateStatus() {
+          await this.updateField("status", this.order.status);
+        },
+
+        async updatePaymentStatus() {
+          await this.updateField("paymentStatus", this.order.paymentStatus);
+        },
+
+        async updateNotes() {
+          await this.updateField("internalNotes", this.order.internalNotes);
+        },
+
+        async updateField(field, value) {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            await fetch(`${API_URL}/trpc/order.update`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {}),
+              },
+              body: JSON.stringify({ json: { id: orderId, [field]: value } }),
+            });
+            Alpine.store("notifications").add("success", "Gespeichert");
+          } catch (e) {
+            Alpine.store("notifications").add("error", "Fehler beim Speichern");
+          }
+        },
+
+        printInvoice() {
+          window.print();
+        },
+      };
+    }
+  </script>
+</AdminLayout>

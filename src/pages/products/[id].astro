@@ -1,0 +1,411 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+
+const { id } = Astro.params;
+const isNew = id === "new";
+---
+
+<AdminLayout title={isNew ? "Neues Produkt" : "Produkt bearbeiten"}>
+  <div x-data="productForm()" x-init="init()">
+    <form @submit.prevent="save()" class="space-y-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <a href="/products" class="text-gray-600 hover:text-gray-900">&larr; Zurück zur Liste</a>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            @click="window.history.back()"
+            class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="submit"
+            :disabled="saving"
+            class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
+          >
+            <span x-show="!saving">Speichern</span>
+            <span x-show="saving">Wird gespeichert...</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="col-span-2 space-y-6">
+          <!-- Basic Info -->
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-4 text-lg font-medium">Grunddaten</h2>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Name *</label>
+                <input
+                  type="text"
+                  x-model="product.name"
+                  required
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Slug</label>
+                <input
+                  type="text"
+                  x-model="product.slug"
+                  placeholder="wird-automatisch-generiert"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Beschreibung</label>
+                <textarea
+                  x-model="product.description"
+                  rows="4"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pricing -->
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-4 text-lg font-medium">Preisgestaltung</h2>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Preis (EUR) *</label>
+                <input
+                  type="number"
+                  x-model.number="product.price"
+                  step="0.01"
+                  min="0"
+                  required
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p class="mt-1 text-xs text-gray-500">In Cent (z.B. 1999 = 19,99 EUR)</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Vergleichspreis</label>
+                <input
+                  type="number"
+                  x-model.number="product.compareAtPrice"
+                  step="0.01"
+                  min="0"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Einkaufspreis</label>
+                <input
+                  type="number"
+                  x-model.number="product.costPrice"
+                  step="0.01"
+                  min="0"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Steuerklasse</label>
+                <select
+                  x-model="product.taxClassId"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+                >
+                  <option value="">Standard</option>
+                  <template x-for="tc in taxClasses" :key="tc.id">
+                    <option :value="tc.id" x-text="tc.name"></option>
+                  </template>
+                </select>
+              </div>
+            </div>
+
+            <!-- Base Price (German legal requirement) -->
+            <div class="mt-4 border-t pt-4">
+              <h3 class="mb-3 text-sm font-medium text-gray-700">Grundpreis (Pflichtangabe)</h3>
+              <div class="grid grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-500">Menge</label>
+                  <input
+                    type="number"
+                    x-model.number="product.baseQuantity"
+                    step="0.01"
+                    class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500">Einheit</label>
+                  <select x-model="product.baseUnit" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">Keine</option>
+                    <option value="kg">Kilogramm</option>
+                    <option value="g">Gramm</option>
+                    <option value="l">Liter</option>
+                    <option value="ml">Milliliter</option>
+                    <option value="m">Meter</option>
+                    <option value="cm">Zentimeter</option>
+                    <option value="piece">Stück</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500">Referenzmenge</label>
+                  <input
+                    type="number"
+                    x-model.number="product.referenceQuantity"
+                    step="0.01"
+                    class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inventory -->
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-4 text-lg font-medium">Bestand</h2>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">SKU</label>
+                <input
+                  type="text"
+                  x-model="product.sku"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">EAN/Barcode</label>
+                <input
+                  type="text"
+                  x-model="product.ean"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Bestand</label>
+                <input
+                  type="number"
+                  x-model.number="product.stock"
+                  min="0"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Gewicht (g)</label>
+                <input
+                  type="number"
+                  x-model.number="product.weight"
+                  min="0"
+                  class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" x-model="product.trackInventory" class="rounded border-gray-300" />
+                <span class="text-sm text-gray-700">Bestand verfolgen</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Status -->
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-4 text-lg font-medium">Status</h2>
+
+            <select
+              x-model="product.status"
+              class="block w-full rounded-lg border border-gray-300 px-3 py-2"
+            >
+              <option value="draft">Entwurf</option>
+              <option value="active">Aktiv</option>
+              <option value="archived">Archiviert</option>
+            </select>
+          </div>
+
+          <!-- Delivery Time -->
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-4 text-lg font-medium">Lieferzeit</h2>
+
+            <select
+              x-model="product.deliveryTimeId"
+              class="block w-full rounded-lg border border-gray-300 px-3 py-2"
+            >
+              <option value="">Standard</option>
+              <template x-for="dt in deliveryTimes" :key="dt.id">
+                <option :value="dt.id" x-text="dt.name"></option>
+              </template>
+            </select>
+          </div>
+
+          <!-- Categories -->
+          <div class="rounded-lg bg-white p-6 shadow">
+            <h2 class="mb-4 text-lg font-medium">Kategorien</h2>
+
+            <div class="max-h-48 space-y-2 overflow-y-auto">
+              <template x-for="category in categories" :key="category.id">
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    :value="category.id"
+                    x-model="product.categoryIds"
+                    class="rounded border-gray-300"
+                  />
+                  <span class="text-sm" x-text="category.name"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script define:vars={{ productId: id, isNewProduct: isNew }}>
+    function productForm() {
+      return {
+        product: {
+          name: "",
+          slug: "",
+          description: "",
+          price: 0,
+          compareAtPrice: null,
+          costPrice: null,
+          taxClassId: null,
+          baseQuantity: null,
+          baseUnit: "",
+          referenceQuantity: null,
+          sku: "",
+          ean: "",
+          stock: 0,
+          weight: null,
+          trackInventory: true,
+          status: "draft",
+          deliveryTimeId: null,
+          categoryIds: [],
+        },
+        categories: [],
+        taxClasses: [],
+        deliveryTimes: [],
+        saving: false,
+        loading: true,
+
+        async init() {
+          await Promise.all([
+            this.loadCategories(),
+            this.loadTaxClasses(),
+            this.loadDeliveryTimes(),
+          ]);
+
+          if (!isNewProduct) {
+            await this.loadProduct();
+          }
+
+          this.loading = false;
+        },
+
+        async loadProduct() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/product.get?input=${encodeURIComponent(JSON.stringify({ json: { id: productId } }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              Object.assign(this.product, data.result?.data?.json || {});
+            }
+          } catch (e) {
+            console.error("Failed to load product:", e);
+          }
+        },
+
+        async loadCategories() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/category.list?input=${encodeURIComponent(JSON.stringify({ json: {} }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              this.categories = data.result?.data?.json?.categories || [];
+            }
+          } catch (e) {
+            console.error("Failed to load categories:", e);
+          }
+        },
+
+        async loadTaxClasses() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/tax.listClasses?input=${encodeURIComponent(JSON.stringify({ json: {} }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              this.taxClasses = data.result?.data?.json || [];
+            }
+          } catch (e) {
+            console.error("Failed to load tax classes:", e);
+          }
+        },
+
+        async loadDeliveryTimes() {
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const response = await fetch(`${API_URL}/trpc/deliveryTime.list?input=${encodeURIComponent(JSON.stringify({ json: {} }))}`, {
+              headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              this.deliveryTimes = data.result?.data?.json || [];
+            }
+          } catch (e) {
+            console.error("Failed to load delivery times:", e);
+          }
+        },
+
+        async save() {
+          this.saving = true;
+          try {
+            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const token = localStorage.getItem("admin_token");
+            const endpoint = isNewProduct ? "product.create" : "product.update";
+            const payload = isNewProduct ? this.product : { id: productId, ...this.product };
+
+            const response = await fetch(`${API_URL}/trpc/${endpoint}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {}),
+              },
+              body: JSON.stringify({ json: payload }),
+            });
+
+            if (response.ok) {
+              Alpine.store("notifications").add("success", "Produkt gespeichert");
+              window.location.href = "/products";
+            } else {
+              throw new Error("Save failed");
+            }
+          } catch (e) {
+            Alpine.store("notifications").add("error", "Fehler beim Speichern");
+          } finally {
+            this.saving = false;
+          }
+        },
+      };
+    }
+  </script>
+</AdminLayout>
