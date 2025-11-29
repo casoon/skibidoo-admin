@@ -1,0 +1,374 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Rabattcodes">
+  <div class="space-y-6" x-data="discountManagement()">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Rabattcodes & Gutscheine</h1>
+      <button @click="showCreateModal = true" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700">+ Neuer Rabattcode</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-4">
+      <div class="rounded-lg bg-white p-4 shadow">
+        <p class="text-sm text-gray-500">Aktive Codes</p>
+        <p class="text-2xl font-bold" x-text="discounts.filter(d => d.active).length"></p>
+      </div>
+      <div class="rounded-lg bg-white p-4 shadow">
+        <p class="text-sm text-gray-500">Einloesungen (30 Tage)</p>
+        <p class="text-2xl font-bold">127</p>
+      </div>
+      <div class="rounded-lg bg-white p-4 shadow">
+        <p class="text-sm text-gray-500">Rabattsumme (30 Tage)</p>
+        <p class="text-2xl font-bold">1.847,50 EUR</p>
+      </div>
+      <div class="rounded-lg bg-white p-4 shadow">
+        <p class="text-sm text-gray-500">Durchschn. Bestellwert</p>
+        <p class="text-2xl font-bold">89,40 EUR</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-4">
+      <input type="text" x-model="searchQuery" placeholder="Code suchen..." class="rounded border-gray-300 text-sm" />
+      <select x-model="filterType" class="rounded border-gray-300 text-sm">
+        <option value="">Alle Typen</option>
+        <option value="percentage">Prozent</option>
+        <option value="fixed">Festbetrag</option>
+        <option value="shipping">Versandkostenfrei</option>
+      </select>
+      <select x-model="filterStatus" class="rounded border-gray-300 text-sm">
+        <option value="">Alle Status</option>
+        <option value="active">Aktiv</option>
+        <option value="inactive">Inaktiv</option>
+        <option value="expired">Abgelaufen</option>
+      </select>
+    </div>
+
+    <!-- Discounts Table -->
+    <div class="rounded-lg bg-white shadow">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Code</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Typ</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Wert</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Nutzungen</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Gueltigkeit</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Status</th>
+              <th class="px-6 py-3 text-right text-xs font-medium uppercase text-gray-500">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <template x-for="discount in filteredDiscounts" :key="discount.id">
+              <tr>
+                <td class="whitespace-nowrap px-6 py-4">
+                  <div class="flex items-center gap-2">
+                    <code class="rounded bg-gray-100 px-2 py-1 text-sm font-medium" x-text="discount.code"></code>
+                    <button @click="copyCode(discount.code)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500" x-text="discount.description"></p>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4">
+                  <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold" :class="getTypeBadgeClass(discount.type)" x-text="getTypeLabel(discount.type)"></span>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4 font-medium" x-text="formatValue(discount)"></td>
+                <td class="whitespace-nowrap px-6 py-4 text-sm">
+                  <span x-text="discount.usageCount"></span>
+                  <span x-show="discount.usageLimit" class="text-gray-400">/ <span x-text="discount.usageLimit"></span></span>
+                  <span x-show="!discount.usageLimit" class="text-gray-400">/ unbegrenzt</span>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4 text-sm">
+                  <div x-show="discount.validFrom || discount.validUntil">
+                    <span x-text="discount.validFrom || `--`"></span> - <span x-text="discount.validUntil || `--`"></span>
+                  </div>
+                  <span x-show="!discount.validFrom && !discount.validUntil" class="text-gray-400">Unbegrenzt</span>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4">
+                  <span class="inline-flex items-center gap-1 text-sm" :class="getStatusClass(discount)">
+                    <span class="h-2 w-2 rounded-full" :class="getStatusDotClass(discount)"></span>
+                    <span x-text="getStatusLabel(discount)"></span>
+                  </span>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4 text-right">
+                  <div class="flex justify-end gap-2">
+                    <button @click="editDiscount(discount)" class="text-primary-600 hover:text-primary-800">Bearbeiten</button>
+                    <button @click="toggleActive(discount)" class="text-gray-600 hover:text-gray-800" x-text="discount.active ? `Deaktivieren` : `Aktivieren`"></button>
+                    <button @click="deleteDiscount(discount)" class="text-red-600 hover:text-red-800">Loeschen</button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div x-show="showCreateModal || editingDiscount" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="closeModal()">
+      <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <h3 class="mb-4 text-lg font-semibold" x-text="editingDiscount ? `Rabattcode bearbeiten` : `Neuer Rabattcode`"></h3>
+
+        <div class="space-y-4">
+          <!-- Code -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Code</label>
+              <div class="flex gap-2">
+                <input type="text" x-model="form.code" class="w-full rounded border-gray-300 text-sm uppercase" placeholder="SOMMER20" />
+                <button @click="generateCode()" type="button" class="rounded border border-gray-300 px-3 text-sm hover:bg-gray-50">Generieren</button>
+              </div>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Beschreibung (intern)</label>
+              <input type="text" x-model="form.description" class="w-full rounded border-gray-300 text-sm" placeholder="Sommeraktion 2024" />
+            </div>
+          </div>
+
+          <!-- Type & Value -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Rabatttyp</label>
+              <select x-model="form.type" class="w-full rounded border-gray-300 text-sm">
+                <option value="percentage">Prozent (%)</option>
+                <option value="fixed">Festbetrag (EUR)</option>
+                <option value="shipping">Versandkostenfrei</option>
+              </select>
+            </div>
+            <div x-show="form.type !== `shipping`">
+              <label class="mb-1 block text-sm font-medium text-gray-700" x-text="form.type === `percentage` ? `Rabatt (%)` : `Rabatt (EUR)`"></label>
+              <input type="number" x-model.number="form.value" step="0.01" min="0" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+          </div>
+
+          <!-- Conditions -->
+          <div class="rounded-lg border p-4">
+            <h4 class="mb-3 font-medium">Bedingungen</h4>
+            <div class="space-y-3">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700">Mindestbestellwert (EUR)</label>
+                  <input type="number" x-model.number="form.minOrderValue" step="0.01" min="0" class="w-full rounded border-gray-300 text-sm" placeholder="0" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700">Maximaler Rabatt (EUR)</label>
+                  <input type="number" x-model.number="form.maxDiscount" step="0.01" min="0" class="w-full rounded border-gray-300 text-sm" placeholder="Unbegrenzt" />
+                  <p class="mt-1 text-xs text-gray-500">Nur bei Prozent-Rabatten relevant</p>
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Gilt fuer</label>
+                <select x-model="form.appliesTo" class="w-full rounded border-gray-300 text-sm">
+                  <option value="all">Gesamten Warenkorb</option>
+                  <option value="products">Bestimmte Produkte</option>
+                  <option value="categories">Bestimmte Kategorien</option>
+                </select>
+              </div>
+
+              <div x-show="form.appliesTo === `products`">
+                <label class="mb-1 block text-sm font-medium text-gray-700">Produkt-IDs (kommagetrennt)</label>
+                <input type="text" x-model="form.productIds" class="w-full rounded border-gray-300 text-sm" placeholder="123, 456, 789" />
+              </div>
+
+              <div x-show="form.appliesTo === `categories`">
+                <label class="mb-1 block text-sm font-medium text-gray-700">Kategorien</label>
+                <select x-model="form.categoryIds" multiple class="w-full rounded border-gray-300 text-sm" size="3">
+                  <option value="cat1">Bekleidung</option>
+                  <option value="cat2">Schuhe</option>
+                  <option value="cat3">Accessoires</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Usage Limits -->
+          <div class="rounded-lg border p-4">
+            <h4 class="mb-3 font-medium">Nutzungslimits</h4>
+            <div class="space-y-3">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700">Maximale Einloesungen gesamt</label>
+                  <input type="number" x-model.number="form.usageLimit" min="0" class="w-full rounded border-gray-300 text-sm" placeholder="Unbegrenzt" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700">Pro Kunde</label>
+                  <input type="number" x-model.number="form.usageLimitPerCustomer" min="0" class="w-full rounded border-gray-300 text-sm" placeholder="Unbegrenzt" />
+                </div>
+              </div>
+              <div>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" x-model="form.firstOrderOnly" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">Nur fuer Erstbestellungen</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Validity Period -->
+          <div class="rounded-lg border p-4">
+            <h4 class="mb-3 font-medium">Gueltigkeitszeitraum</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Gueltig ab</label>
+                <input type="datetime-local" x-model="form.validFrom" class="w-full rounded border-gray-300 text-sm" />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Gueltig bis</label>
+                <input type="datetime-local" x-model="form.validUntil" class="w-full rounded border-gray-300 text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Active -->
+          <div>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="form.active" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Sofort aktivieren</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button @click="closeModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Abbrechen</button>
+          <button @click="saveDiscount()" class="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700">Speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function discountManagement() {
+      return {
+        searchQuery: "",
+        filterType: "",
+        filterStatus: "",
+        showCreateModal: false,
+        editingDiscount: null,
+        form: {
+          code: "", description: "", type: "percentage", value: 10,
+          minOrderValue: null, maxDiscount: null,
+          appliesTo: "all", productIds: "", categoryIds: [],
+          usageLimit: null, usageLimitPerCustomer: 1, firstOrderOnly: false,
+          validFrom: "", validUntil: "", active: true,
+        },
+
+        discounts: [
+          { id: "1", code: "SOMMER20", description: "Sommeraktion", type: "percentage", value: 20, usageCount: 45, usageLimit: 100, validFrom: "01.06.2024", validUntil: "31.08.2024", active: true },
+          { id: "2", code: "WELCOME10", description: "Neukunden", type: "percentage", value: 10, usageCount: 234, usageLimit: null, validFrom: null, validUntil: null, active: true },
+          { id: "3", code: "FREESHIP", description: "Versandkostenfrei", type: "shipping", value: 0, usageCount: 89, usageLimit: null, validFrom: null, validUntil: "31.12.2024", active: true },
+          { id: "4", code: "VIP50", description: "VIP-Rabatt", type: "fixed", value: 50, usageCount: 12, usageLimit: 20, validFrom: null, validUntil: null, active: false },
+          { id: "5", code: "BLACKFRIDAY", description: "Black Friday 2023", type: "percentage", value: 30, usageCount: 567, usageLimit: 500, validFrom: "24.11.2023", validUntil: "27.11.2023", active: false },
+        ],
+
+        get filteredDiscounts() {
+          return this.discounts.filter(d => {
+            if (this.searchQuery && !d.code.toLowerCase().includes(this.searchQuery.toLowerCase())) return false;
+            if (this.filterType && d.type !== this.filterType) return false;
+            if (this.filterStatus === "active" && !d.active) return false;
+            if (this.filterStatus === "inactive" && d.active) return false;
+            return true;
+          });
+        },
+
+        getTypeBadgeClass(type) {
+          const classes = { percentage: "bg-blue-100 text-blue-800", fixed: "bg-green-100 text-green-800", shipping: "bg-purple-100 text-purple-800" };
+          return classes[type] || "bg-gray-100 text-gray-800";
+        },
+
+        getTypeLabel(type) {
+          const labels = { percentage: "Prozent", fixed: "Festbetrag", shipping: "Versand" };
+          return labels[type] || type;
+        },
+
+        formatValue(discount) {
+          if (discount.type === "percentage") return discount.value + " %";
+          if (discount.type === "fixed") return discount.value.toFixed(2) + " EUR";
+          return "Gratis";
+        },
+
+        getStatusClass(d) {
+          if (!d.active) return "text-gray-500";
+          if (d.usageLimit && d.usageCount >= d.usageLimit) return "text-orange-500";
+          return "text-green-600";
+        },
+
+        getStatusDotClass(d) {
+          if (!d.active) return "bg-gray-300";
+          if (d.usageLimit && d.usageCount >= d.usageLimit) return "bg-orange-500";
+          return "bg-green-500";
+        },
+
+        getStatusLabel(d) {
+          if (!d.active) return "Inaktiv";
+          if (d.usageLimit && d.usageCount >= d.usageLimit) return "Limit erreicht";
+          return "Aktiv";
+        },
+
+        copyCode(code) {
+          navigator.clipboard.writeText(code);
+          Alpine.store("notifications").add("success", "Code kopiert: " + code);
+        },
+
+        generateCode() {
+          const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+          let code = "";
+          for (let i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+          this.form.code = code;
+        },
+
+        editDiscount(discount) {
+          this.editingDiscount = discount;
+          this.form = { ...discount };
+        },
+
+        toggleActive(discount) {
+          discount.active = !discount.active;
+          Alpine.store("notifications").add("success", discount.active ? "Rabattcode aktiviert" : "Rabattcode deaktiviert");
+        },
+
+        deleteDiscount(discount) {
+          if (confirm("Rabattcode " + discount.code + " wirklich loeschen?")) {
+            this.discounts = this.discounts.filter(d => d.id !== discount.id);
+            Alpine.store("notifications").add("success", "Rabattcode geloescht");
+          }
+        },
+
+        closeModal() {
+          this.showCreateModal = false;
+          this.editingDiscount = null;
+          this.form = {
+            code: "", description: "", type: "percentage", value: 10,
+            minOrderValue: null, maxDiscount: null,
+            appliesTo: "all", productIds: "", categoryIds: [],
+            usageLimit: null, usageLimitPerCustomer: 1, firstOrderOnly: false,
+            validFrom: "", validUntil: "", active: true,
+          };
+        },
+
+        async saveDiscount() {
+          if (!this.form.code) {
+            Alpine.store("notifications").add("error", "Bitte Code eingeben");
+            return;
+          }
+
+          if (this.editingDiscount) {
+            const idx = this.discounts.findIndex(d => d.id === this.editingDiscount.id);
+            if (idx !== -1) this.discounts[idx] = { ...this.discounts[idx], ...this.form };
+            Alpine.store("notifications").add("success", "Rabattcode aktualisiert");
+          } else {
+            this.discounts.unshift({ ...this.form, id: crypto.randomUUID(), usageCount: 0 });
+            Alpine.store("notifications").add("success", "Rabattcode erstellt");
+          }
+          this.closeModal();
+        },
+      };
+    }
+  </script>
+</AdminLayout>

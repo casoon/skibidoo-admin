@@ -1,0 +1,445 @@
+---
+import SettingsLayout from "@/layouts/SettingsLayout.astro";
+---
+
+<SettingsLayout>
+  <div class="space-y-6" x-data="legalSettings()">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Rechtliche Einstellungen</h1>
+    </div>
+
+    <!-- Legal Pages Tabs -->
+    <div class="rounded-lg bg-white shadow">
+      <div class="border-b">
+        <nav class="flex gap-4 px-6" aria-label="Tabs">
+          <button
+            @click="activeTab = `agb`"
+            :class="activeTab === `agb` ? `border-primary-600 text-primary-600` : `border-transparent text-gray-500 hover:text-gray-700`"
+            class="border-b-2 px-1 py-4 text-sm font-medium"
+          >
+            AGB
+          </button>
+          <button
+            @click="activeTab = `widerruf`"
+            :class="activeTab === `widerruf` ? `border-primary-600 text-primary-600` : `border-transparent text-gray-500 hover:text-gray-700`"
+            class="border-b-2 px-1 py-4 text-sm font-medium"
+          >
+            Widerrufsbelehrung
+          </button>
+          <button
+            @click="activeTab = `datenschutz`"
+            :class="activeTab === `datenschutz` ? `border-primary-600 text-primary-600` : `border-transparent text-gray-500 hover:text-gray-700`"
+            class="border-b-2 px-1 py-4 text-sm font-medium"
+          >
+            Datenschutz
+          </button>
+          <button
+            @click="activeTab = `impressum`"
+            :class="activeTab === `impressum` ? `border-primary-600 text-primary-600` : `border-transparent text-gray-500 hover:text-gray-700`"
+            class="border-b-2 px-1 py-4 text-sm font-medium"
+          >
+            Impressum
+          </button>
+          <button
+            @click="activeTab = `versand`"
+            :class="activeTab === `versand` ? `border-primary-600 text-primary-600` : `border-transparent text-gray-500 hover:text-gray-700`"
+            class="border-b-2 px-1 py-4 text-sm font-medium"
+          >
+            Versand & Zahlung
+          </button>
+        </nav>
+      </div>
+
+      <div class="p-6">
+        <!-- AGB -->
+        <div x-show="activeTab === `agb`">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold">Allgemeine Geschaeftsbedingungen</h2>
+              <p class="text-sm text-gray-500">Rechtlich bindende Vertragsbedingungen fuer Ihren Shop</p>
+            </div>
+            <div class="flex gap-2">
+              <button @click="loadTemplate(`agb`)" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Mustervorlage laden</button>
+            </div>
+          </div>
+          <textarea x-model="pages.agb" rows="20" class="w-full rounded border-gray-300 font-mono text-sm" placeholder="Ihre AGB hier eingeben..."></textarea>
+          <p class="mt-2 text-xs text-gray-500">HTML-Formatierung wird unterstuetzt. Letzte Aenderung: <span x-text="pages.agbLastModified || `Nie`"></span></p>
+        </div>
+
+        <!-- Widerrufsbelehrung -->
+        <div x-show="activeTab === `widerruf`">
+          <div class="mb-4">
+            <h2 class="text-lg font-semibold">Widerrufsbelehrung</h2>
+            <p class="text-sm text-gray-500">Gesetzlich vorgeschriebene Belehrung ueber das Widerrufsrecht (14 Tage)</p>
+          </div>
+
+          <div class="mb-4 rounded-lg bg-yellow-50 p-4">
+            <div class="flex">
+              <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <div class="ml-3">
+                <p class="text-sm text-yellow-700">Die Widerrufsbelehrung muss den gesetzlichen Vorgaben entsprechen. Verwenden Sie die Mustervorlage als Ausgangspunkt.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Widerrufsfrist (Tage)</label>
+              <input type="number" x-model.number="widerrufConfig.days" min="14" class="w-full rounded border-gray-300 text-sm" />
+              <p class="mt-1 text-xs text-gray-500">Mindestens 14 Tage (gesetzlich)</p>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Ruecksende-Kostentraeger</label>
+              <select x-model="widerrufConfig.returnCostBearer" class="w-full rounded border-gray-300 text-sm">
+                <option value="customer">Kunde traegt Kosten</option>
+                <option value="shop">Shop traegt Kosten</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mb-4">
+            <button @click="loadTemplate(`widerruf`)" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Mustervorlage laden</button>
+          </div>
+
+          <textarea x-model="pages.widerruf" rows="20" class="w-full rounded border-gray-300 font-mono text-sm"></textarea>
+        </div>
+
+        <!-- Datenschutz -->
+        <div x-show="activeTab === `datenschutz`">
+          <div class="mb-4">
+            <h2 class="text-lg font-semibold">Datenschutzerklaerung</h2>
+            <p class="text-sm text-gray-500">DSGVO-konforme Datenschutzerklaerung</p>
+          </div>
+
+          <div class="mb-4 rounded-lg bg-blue-50 p-4">
+            <div class="flex">
+              <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              <div class="ml-3">
+                <p class="text-sm text-blue-700">Die Datenschutzerklaerung muss alle eingesetzten Dienste und Tracking-Tools auflisten (Analytics, Zahlungsanbieter, etc.)</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Verwendete Dienste (fuer automatische Generierung)</label>
+            <div class="flex flex-wrap gap-2">
+              <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <input type="checkbox" x-model="datenschutzConfig.services.googleAnalytics" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Google Analytics</span>
+              </label>
+              <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <input type="checkbox" x-model="datenschutzConfig.services.stripe" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Stripe</span>
+              </label>
+              <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <input type="checkbox" x-model="datenschutzConfig.services.paypal" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">PayPal</span>
+              </label>
+              <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <input type="checkbox" x-model="datenschutzConfig.services.newsletter" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Newsletter</span>
+              </label>
+              <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <input type="checkbox" x-model="datenschutzConfig.services.cloudflare" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Cloudflare</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mb-4">
+            <button @click="loadTemplate(`datenschutz`)" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Mustervorlage laden</button>
+            <button @click="generateDatenschutz()" class="rounded border border-primary-600 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50">Automatisch generieren</button>
+          </div>
+
+          <textarea x-model="pages.datenschutz" rows="20" class="w-full rounded border-gray-300 font-mono text-sm"></textarea>
+        </div>
+
+        <!-- Impressum -->
+        <div x-show="activeTab === `impressum`">
+          <div class="mb-4">
+            <h2 class="text-lg font-semibold">Impressum</h2>
+            <p class="text-sm text-gray-500">Gesetzlich vorgeschriebene Anbieterkennzeichnung</p>
+          </div>
+
+          <div class="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Firmenname</label>
+              <input type="text" x-model="impressumData.company" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Rechtsform</label>
+              <select x-model="impressumData.legalForm" class="w-full rounded border-gray-300 text-sm">
+                <option value="">-- Waehlen --</option>
+                <option value="einzelunternehmen">Einzelunternehmen</option>
+                <option value="gbr">GbR</option>
+                <option value="gmbh">GmbH</option>
+                <option value="ug">UG (haftungsbeschraenkt)</option>
+                <option value="ag">AG</option>
+                <option value="kg">KG</option>
+                <option value="ohg">OHG</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Vertretungsberechtigte Person</label>
+              <input type="text" x-model="impressumData.representative" class="w-full rounded border-gray-300 text-sm" placeholder="Max Mustermann (Geschaeftsfuehrer)" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">USt-IdNr.</label>
+              <input type="text" x-model="impressumData.vatId" class="w-full rounded border-gray-300 text-sm" placeholder="DE123456789" />
+            </div>
+          </div>
+
+          <div class="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Handelsregister</label>
+              <input type="text" x-model="impressumData.registerCourt" class="w-full rounded border-gray-300 text-sm" placeholder="Amtsgericht Musterstadt, HRB 12345" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Aufsichtsbehoerde (falls relevant)</label>
+              <input type="text" x-model="impressumData.supervisoryAuthority" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="mb-1 block text-sm font-medium text-gray-700">Adresse</label>
+            <textarea x-model="impressumData.address" rows="3" class="w-full rounded border-gray-300 text-sm" placeholder="Musterstrasse 1&#10;12345 Musterstadt&#10;Deutschland"></textarea>
+          </div>
+
+          <div class="mb-4 grid grid-cols-3 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Telefon</label>
+              <input type="text" x-model="impressumData.phone" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">E-Mail</label>
+              <input type="email" x-model="impressumData.email" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Fax (optional)</label>
+              <input type="text" x-model="impressumData.fax" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+          </div>
+
+          <div class="flex gap-2 mb-4">
+            <button @click="generateImpressum()" class="rounded border border-primary-600 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50">Impressum generieren</button>
+          </div>
+
+          <textarea x-model="pages.impressum" rows="15" class="w-full rounded border-gray-300 font-mono text-sm"></textarea>
+        </div>
+
+        <!-- Versand & Zahlung -->
+        <div x-show="activeTab === `versand`">
+          <div class="mb-4">
+            <h2 class="text-lg font-semibold">Versand- und Zahlungsbedingungen</h2>
+            <p class="text-sm text-gray-500">Informationen zu Versandkosten und Zahlungsmoeglichkeiten</p>
+          </div>
+          <div class="flex gap-2 mb-4">
+            <button @click="generateVersand()" class="rounded border border-primary-600 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50">Aus Einstellungen generieren</button>
+          </div>
+          <textarea x-model="pages.versand" rows="20" class="w-full rounded border-gray-300 font-mono text-sm"></textarea>
+        </div>
+
+        <!-- Save Button -->
+        <div class="mt-6 flex justify-end border-t pt-4">
+          <button @click="savePage(activeTab)" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">
+            <span x-text="saving ? `Speichern...` : `Speichern`"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OS-Link and Legal Info -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">Pflichtangaben im Shop</h2>
+
+      <div class="space-y-4">
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="legalConfig.showOsLink" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">OS-Plattform-Link anzeigen</span>
+          </label>
+          <p class="ml-6 text-xs text-gray-500">Link zur EU-Online-Streitbeilegungsplattform (Pflicht fuer B2C)</p>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="legalConfig.showVatHint" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">"inkl. MwSt." bei Preisen anzeigen</span>
+          </label>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="legalConfig.showShippingHint" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">"zzgl. Versandkosten" mit Link anzeigen</span>
+          </label>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="legalConfig.showDeliveryTime" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">Lieferzeit auf Produktseiten anzeigen</span>
+          </label>
+          <p class="ml-6 text-xs text-gray-500">Pflicht nach deutscher Rechtsprechung</p>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="legalConfig.showGrundpreis" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">Grundpreis anzeigen (PAngV)</span>
+          </label>
+          <p class="ml-6 text-xs text-gray-500">Pflicht fuer Produkte nach Gewicht/Volumen</p>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveLegalConfig()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function legalSettings() {
+      return {
+        activeTab: "agb",
+        pages: {
+          agb: "",
+          agbLastModified: null,
+          widerruf: "",
+          datenschutz: "",
+          impressum: "",
+          versand: "",
+        },
+        widerrufConfig: { days: 14, returnCostBearer: "customer" },
+        datenschutzConfig: {
+          services: { googleAnalytics: false, stripe: true, paypal: false, newsletter: true, cloudflare: false },
+        },
+        impressumData: {
+          company: "",
+          legalForm: "",
+          representative: "",
+          vatId: "",
+          registerCourt: "",
+          supervisoryAuthority: "",
+          address: "",
+          phone: "",
+          email: "",
+          fax: "",
+        },
+        legalConfig: {
+          showOsLink: true,
+          showVatHint: true,
+          showShippingHint: true,
+          showDeliveryTime: true,
+          showGrundpreis: true,
+        },
+        saving: false,
+
+        loadTemplate(type) {
+          const templates = {
+            agb: "<h2>Allgemeine Geschaeftsbedingungen</h2>\n\n<h3>1. Geltungsbereich</h3>\n<p>Diese Allgemeinen Geschaeftsbedingungen gelten fuer alle Vertraege...</p>",
+            widerruf: "<h2>Widerrufsbelehrung</h2>\n\n<h3>Widerrufsrecht</h3>\n<p>Sie haben das Recht, binnen " + this.widerrufConfig.days + " Tagen ohne Angabe von Gruenden diesen Vertrag zu widerrufen...</p>",
+            datenschutz: "<h2>Datenschutzerklaerung</h2>\n\n<h3>1. Datenschutz auf einen Blick</h3>\n<p>Die folgenden Hinweise geben einen einfachen Ueberblick darueber, was mit Ihren personenbezogenen Daten passiert...</p>",
+          };
+          if (templates[type]) {
+            this.pages[type] = templates[type];
+            Alpine.store("notifications").add("info", "Mustervorlage geladen - bitte anpassen!");
+          }
+        },
+
+        generateDatenschutz() {
+          let text = "<h2>Datenschutzerklaerung</h2>\n\n";
+          text += "<h3>1. Verantwortlicher</h3>\n<p>Verantwortlich fuer die Datenverarbeitung auf dieser Website ist...</p>\n\n";
+
+          if (this.datenschutzConfig.services.stripe) {
+            text += "<h3>Stripe</h3>\n<p>Wir nutzen Stripe fuer die Zahlungsabwicklung. Anbieter ist Stripe Inc., 510 Townsend Street, San Francisco, CA 94103, USA...</p>\n\n";
+          }
+          if (this.datenschutzConfig.services.paypal) {
+            text += "<h3>PayPal</h3>\n<p>Wir bieten Zahlung via PayPal an. Anbieter ist PayPal (Europe) S.a r.l. et Cie, S.C.A., 22-24 Boulevard Royal, L-2449 Luxembourg...</p>\n\n";
+          }
+          if (this.datenschutzConfig.services.googleAnalytics) {
+            text += "<h3>Google Analytics</h3>\n<p>Diese Website nutzt Funktionen des Webanalysedienstes Google Analytics. Anbieter ist Google Ireland Limited...</p>\n\n";
+          }
+          if (this.datenschutzConfig.services.newsletter) {
+            text += "<h3>Newsletter</h3>\n<p>Wenn Sie den auf der Website angebotenen Newsletter beziehen moechten, benoetigen wir von Ihnen eine E-Mail-Adresse...</p>\n\n";
+          }
+
+          this.pages.datenschutz = text;
+          Alpine.store("notifications").add("info", "Datenschutzerklaerung generiert - bitte vervollstaendigen!");
+        },
+
+        generateImpressum() {
+          let text = "<h2>Impressum</h2>\n\n";
+          text += "<p><strong>" + this.impressumData.company + "</strong>";
+          if (this.impressumData.legalForm) text += " (" + this.impressumData.legalForm.toUpperCase() + ")";
+          text += "</p>\n";
+          text += "<p>" + this.impressumData.address.replace(/\n/g, "<br>") + "</p>\n\n";
+
+          if (this.impressumData.representative) {
+            text += "<p>Vertreten durch: " + this.impressumData.representative + "</p>\n";
+          }
+
+          text += "<h3>Kontakt</h3>\n";
+          if (this.impressumData.phone) text += "<p>Telefon: " + this.impressumData.phone + "</p>\n";
+          if (this.impressumData.email) text += "<p>E-Mail: " + this.impressumData.email + "</p>\n";
+          if (this.impressumData.fax) text += "<p>Fax: " + this.impressumData.fax + "</p>\n";
+
+          if (this.impressumData.registerCourt) {
+            text += "\n<h3>Registereintrag</h3>\n<p>" + this.impressumData.registerCourt + "</p>\n";
+          }
+          if (this.impressumData.vatId) {
+            text += "\n<h3>Umsatzsteuer-ID</h3>\n<p>" + this.impressumData.vatId + "</p>\n";
+          }
+
+          text += "\n<h3>EU-Streitschlichtung</h3>\n";
+          text += "<p>Die Europaeische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href=\"https://ec.europa.eu/consumers/odr/\" target=\"_blank\">https://ec.europa.eu/consumers/odr/</a></p>\n";
+
+          this.pages.impressum = text;
+          Alpine.store("notifications").add("success", "Impressum generiert");
+        },
+
+        generateVersand() {
+          let text = "<h2>Versand- und Zahlungsbedingungen</h2>\n\n";
+          text += "<h3>Versandkosten</h3>\n";
+          text += "<p>Die Versandkosten werden Ihnen im Warenkorb und vor Abschluss der Bestellung angezeigt.</p>\n\n";
+          text += "<h3>Lieferzeiten</h3>\n";
+          text += "<p>Die Lieferzeit betraegt in der Regel 2-4 Werktage innerhalb Deutschlands.</p>\n\n";
+          text += "<h3>Zahlungsarten</h3>\n";
+          text += "<p>Wir akzeptieren folgende Zahlungsarten:</p>\n";
+          text += "<ul>\n<li>Kreditkarte (Visa, Mastercard)</li>\n<li>PayPal</li>\n<li>SEPA-Lastschrift</li>\n<li>Vorkasse</li>\n</ul>\n";
+
+          this.pages.versand = text;
+          Alpine.store("notifications").add("success", "Versandbedingungen generiert");
+        },
+
+        async savePage(tab) {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            this.pages[tab + "LastModified"] = new Date().toLocaleString("de-DE");
+            Alpine.store("notifications").add("success", "Seite gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async saveLegalConfig() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "Einstellungen gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+      };
+    }
+  </script>
+</SettingsLayout>

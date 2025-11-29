@@ -1,0 +1,317 @@
+---
+import SettingsLayout from "@/layouts/SettingsLayout.astro";
+---
+
+<SettingsLayout>
+  <div class="space-y-6" x-data="emailSettings()">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">E-Mail-Einstellungen</h1>
+    </div>
+
+    <!-- SMTP Configuration -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">SMTP-Konfiguration</h2>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">SMTP-Host</label>
+            <input type="text" x-model="smtp.host" class="w-full rounded border-gray-300 text-sm" placeholder="smtp.example.com" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Port</label>
+            <select x-model="smtp.port" class="w-full rounded border-gray-300 text-sm">
+              <option value="25">25 (SMTP)</option>
+              <option value="465">465 (SMTPS)</option>
+              <option value="587">587 (STARTTLS)</option>
+              <option value="2525">2525 (Alternative)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Benutzername</label>
+            <input type="text" x-model="smtp.username" class="w-full rounded border-gray-300 text-sm" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Passwort</label>
+            <input type="password" x-model="smtp.password" class="w-full rounded border-gray-300 text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Verschluesselung</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2">
+              <input type="radio" x-model="smtp.encryption" value="none" class="text-primary-600" />
+              <span class="text-sm">Keine</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="radio" x-model="smtp.encryption" value="tls" class="text-primary-600" />
+              <span class="text-sm">TLS</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="radio" x-model="smtp.encryption" value="ssl" class="text-primary-600" />
+              <span class="text-sm">SSL</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Absender-Name</label>
+            <input type="text" x-model="smtp.fromName" class="w-full rounded border-gray-300 text-sm" placeholder="Mein Shop" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Absender-E-Mail</label>
+            <input type="email" x-model="smtp.fromEmail" class="w-full rounded border-gray-300 text-sm" placeholder="shop@example.com" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 pt-2">
+          <button @click="testSmtp()" :disabled="testing" class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50">
+            <span x-show="!testing">Verbindung testen</span>
+            <span x-show="testing">Teste...</span>
+          </button>
+          <span x-show="testResult === true" class="text-sm text-green-600">Verbindung erfolgreich!</span>
+          <span x-show="testResult === false" class="text-sm text-red-600">Verbindung fehlgeschlagen</span>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveSmtp()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">SMTP speichern</button>
+      </div>
+    </div>
+
+    <!-- Email Templates -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">E-Mail-Vorlagen</h2>
+
+      <div class="space-y-3">
+        <template x-for="template in templates" :key="template.id">
+          <div class="flex items-center justify-between rounded-lg border p-4">
+            <div class="flex items-center gap-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg" :class="template.enabled ? `bg-green-100` : `bg-gray-100`">
+                <svg class="h-5 w-5" :class="template.enabled ? `text-green-600` : `text-gray-400`" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-medium" x-text="template.name"></h3>
+                <p class="text-sm text-gray-500" x-text="template.description"></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="relative inline-flex cursor-pointer items-center">
+                <input type="checkbox" x-model="template.enabled" class="peer sr-only" />
+                <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+              </label>
+              <button @click="editTemplate(template)" class="rounded px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50">Bearbeiten</button>
+              <button @click="previewTemplate(template)" class="rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Vorschau</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Template Editor Modal -->
+    <div x-show="editingTemplate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="editingTemplate = null">
+      <div class="w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl" x-show="editingTemplate">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" x-text="editingTemplate?.name"></h3>
+          <button @click="editingTemplate = null" class="text-gray-400 hover:text-gray-600">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Betreff</label>
+            <input type="text" x-model="editingTemplate.subject" class="w-full rounded border-gray-300 text-sm" />
+            <p class="mt-1 text-xs text-gray-500">Variablen: {{shop_name}}, {{order_number}}, {{customer_name}}</p>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Inhalt (HTML)</label>
+            <textarea x-model="editingTemplate.body" rows="15" class="w-full rounded border-gray-300 font-mono text-sm"></textarea>
+            <p class="mt-1 text-xs text-gray-500">
+              Variablen: {{shop_name}}, {{shop_url}}, {{customer_name}}, {{customer_email}}, {{order_number}}, {{order_date}}, {{order_total}}, {{order_items}}, {{shipping_address}}, {{tracking_number}}, {{tracking_url}}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button @click="editingTemplate = null" class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Abbrechen</button>
+          <button @click="sendTestEmail()" class="rounded-lg border border-primary-600 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50">Test-E-Mail senden</button>
+          <button @click="saveTemplate()" class="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">Benachrichtigungen</h2>
+
+      <div class="space-y-4">
+        <div>
+          <h3 class="mb-2 text-sm font-medium text-gray-700">Admin-Benachrichtigungen</h3>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.adminNewOrder" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Neue Bestellung</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.adminLowStock" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Niedriger Lagerbestand</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.adminNewCustomer" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Neuer Kunde registriert</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.adminPaymentFailed" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Zahlung fehlgeschlagen</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Admin-E-Mail-Adressen</label>
+          <input type="text" x-model="notifications.adminEmails" class="w-full rounded border-gray-300 text-sm" placeholder="admin@example.com, shop@example.com" />
+          <p class="mt-1 text-xs text-gray-500">Mehrere Adressen mit Komma trennen</p>
+        </div>
+
+        <div class="border-t pt-4">
+          <h3 class="mb-2 text-sm font-medium text-gray-700">Kunden-Benachrichtigungen</h3>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.customerOrderConfirmation" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Bestellbestaetigung</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.customerShippingConfirmation" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Versandbestaetigung</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.customerDelivered" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Lieferung erfolgt</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="notifications.customerRefund" class="rounded border-gray-300 text-primary-600" />
+              <span class="text-sm">Rueckerstattung</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveNotifications()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Benachrichtigungen speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function emailSettings() {
+      return {
+        smtp: {
+          host: "smtp.example.com",
+          port: "587",
+          username: "",
+          password: "",
+          encryption: "tls",
+          fromName: "Mein Shop",
+          fromEmail: "shop@example.com",
+        },
+        templates: [
+          { id: "order_confirmation", name: "Bestellbestaetigung", description: "Wird nach erfolgreicher Bestellung gesendet", enabled: true, subject: "Bestellung {{order_number}} bestaetigt", body: "" },
+          { id: "shipping_confirmation", name: "Versandbestaetigung", description: "Wird gesendet wenn die Bestellung versendet wurde", enabled: true, subject: "Ihre Bestellung {{order_number}} wurde versendet", body: "" },
+          { id: "delivery_confirmation", name: "Lieferbestaetigung", description: "Wird gesendet wenn die Lieferung erfolgt ist", enabled: false, subject: "Ihre Bestellung {{order_number}} wurde geliefert", body: "" },
+          { id: "password_reset", name: "Passwort zuruecksetzen", description: "Link zum Zuruecksetzen des Passworts", enabled: true, subject: "Passwort zuruecksetzen - {{shop_name}}", body: "" },
+          { id: "welcome", name: "Willkommen", description: "Wird bei Neuregistrierung gesendet", enabled: true, subject: "Willkommen bei {{shop_name}}", body: "" },
+          { id: "newsletter_optin", name: "Newsletter Double-Opt-In", description: "Bestaetigung der Newsletter-Anmeldung", enabled: true, subject: "Bitte bestaetigen Sie Ihre Newsletter-Anmeldung", body: "" },
+          { id: "refund", name: "Rueckerstattung", description: "Bestaetigung einer Rueckerstattung", enabled: true, subject: "Rueckerstattung fuer Bestellung {{order_number}}", body: "" },
+          { id: "invoice", name: "Rechnung", description: "Rechnung als PDF-Anhang", enabled: true, subject: "Rechnung zu Bestellung {{order_number}}", body: "" },
+        ],
+        notifications: {
+          adminNewOrder: true,
+          adminLowStock: true,
+          adminNewCustomer: false,
+          adminPaymentFailed: true,
+          adminEmails: "admin@example.com",
+          customerOrderConfirmation: true,
+          customerShippingConfirmation: true,
+          customerDelivered: false,
+          customerRefund: true,
+        },
+        editingTemplate: null,
+        saving: false,
+        testing: false,
+        testResult: null,
+
+        editTemplate(template) {
+          this.editingTemplate = { ...template };
+        },
+
+        previewTemplate(template) {
+          window.open(`/api/email-preview/${template.id}`, "_blank", "width=600,height=800");
+        },
+
+        async testSmtp() {
+          this.testing = true;
+          this.testResult = null;
+          try {
+            await new Promise(r => setTimeout(r, 1500));
+            this.testResult = Math.random() > 0.3;
+          } finally {
+            this.testing = false;
+          }
+        },
+
+        async saveSmtp() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "SMTP-Einstellungen gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async saveTemplate() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            const idx = this.templates.findIndex(t => t.id === this.editingTemplate.id);
+            if (idx !== -1) this.templates[idx] = { ...this.editingTemplate };
+            this.editingTemplate = null;
+            Alpine.store("notifications").add("success", "Vorlage gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async sendTestEmail() {
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "Test-E-Mail gesendet an " + this.smtp.fromEmail);
+          } catch (e) {
+            Alpine.store("notifications").add("error", "Fehler beim Senden");
+          }
+        },
+
+        async saveNotifications() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "Benachrichtigungen gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+      };
+    }
+  </script>
+</SettingsLayout>
