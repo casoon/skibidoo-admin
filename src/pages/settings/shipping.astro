@@ -1,0 +1,333 @@
+---
+import SettingsLayout from "@/layouts/SettingsLayout.astro";
+---
+
+<SettingsLayout>
+  <div class="space-y-6" x-data="shippingSettings()">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Versandeinstellungen</h1>
+    </div>
+
+    <!-- Shipping Zones -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Versandzonen</h2>
+        <button
+          @click="addZone()"
+          class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
+        >
+          + Neue Zone
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <template x-for="zone in zones" :key="zone.id">
+          <div class="rounded-lg border p-4">
+            <div class="mb-4 flex items-start justify-between">
+              <div class="flex-1 space-y-3">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Zonenname</label>
+                    <input
+                      type="text"
+                      x-model="zone.name"
+                      class="w-full rounded border-gray-300 text-sm"
+                      placeholder="z.B. Deutschland"
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Laender</label>
+                    <select
+                      x-model="zone.countries"
+                      multiple
+                      class="w-full rounded border-gray-300 text-sm"
+                      size="3"
+                    >
+                      <option value="DE">Deutschland</option>
+                      <option value="AT">Oesterreich</option>
+                      <option value="CH">Schweiz</option>
+                      <option value="NL">Niederlande</option>
+                      <option value="BE">Belgien</option>
+                      <option value="FR">Frankreich</option>
+                      <option value="PL">Polen</option>
+                      <option value="CZ">Tschechien</option>
+                      <option value="IT">Italien</option>
+                      <option value="ES">Spanien</option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Strg/Cmd + Klick fuer Mehrfachauswahl</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                @click="deleteZone(zone.id)"
+                class="ml-4 text-red-600 hover:text-red-800"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Shipping Methods for this Zone -->
+            <div class="mt-4 border-t pt-4">
+              <div class="mb-2 flex items-center justify-between">
+                <h4 class="text-sm font-medium text-gray-700">Versandmethoden</h4>
+                <button
+                  @click="addMethod(zone.id)"
+                  class="text-sm text-primary-600 hover:text-primary-700"
+                >
+                  + Methode hinzufuegen
+                </button>
+              </div>
+
+              <div class="overflow-hidden rounded border" x-show="zone.methods.length > 0">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Name</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Preis</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Gratis ab</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Lieferzeit</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Aktiv</th>
+                      <th class="px-3 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white">
+                    <template x-for="method in zone.methods" :key="method.id">
+                      <tr>
+                        <td class="px-3 py-2">
+                          <input type="text" x-model="method.name" class="w-full rounded border-gray-300 text-sm" />
+                        </td>
+                        <td class="px-3 py-2">
+                          <div class="flex items-center gap-1">
+                            <input type="number" x-model.number="method.price" step="0.01" min="0" class="w-20 rounded border-gray-300 text-sm" />
+                            <span class="text-gray-500">EUR</span>
+                          </div>
+                        </td>
+                        <td class="px-3 py-2">
+                          <div class="flex items-center gap-1">
+                            <input type="number" x-model.number="method.freeFrom" step="0.01" min="0" class="w-20 rounded border-gray-300 text-sm" placeholder="--" />
+                            <span class="text-gray-500">EUR</span>
+                          </div>
+                        </td>
+                        <td class="px-3 py-2">
+                          <input type="text" x-model="method.deliveryTime" class="w-32 rounded border-gray-300 text-sm" placeholder="2-4 Werktage" />
+                        </td>
+                        <td class="px-3 py-2">
+                          <input type="checkbox" x-model="method.active" class="rounded border-gray-300 text-primary-600" />
+                        </td>
+                        <td class="px-3 py-2 text-right">
+                          <button @click="deleteMethod(zone.id, method.id)" class="text-red-600 hover:text-red-800">Loeschen</button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <p x-show="zone.methods.length === 0" class="text-sm text-gray-500 italic">Keine Versandmethoden definiert</p>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveZones()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Versandzonen speichern</button>
+      </div>
+    </div>
+
+    <!-- Global Shipping Settings -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">Allgemeine Versandeinstellungen</h2>
+
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Versandursprung</label>
+          <select x-model="globalSettings.originCountry" class="w-full max-w-xs rounded border-gray-300">
+            <option value="DE">Deutschland</option>
+            <option value="AT">Oesterreich</option>
+            <option value="CH">Schweiz</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="globalSettings.calculateByWeight" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">Versandkosten nach Gewicht berechnen</span>
+          </label>
+        </div>
+
+        <div x-show="globalSettings.calculateByWeight" class="ml-6 space-y-2">
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Standardgewicht (kg)</label>
+              <input type="number" x-model.number="globalSettings.defaultWeight" step="0.1" min="0" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Preis pro kg</label>
+              <input type="number" x-model.number="globalSettings.pricePerKg" step="0.01" min="0" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="globalSettings.enableLocalPickup" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">Abholung vor Ort anbieten</span>
+          </label>
+        </div>
+
+        <div x-show="globalSettings.enableLocalPickup" class="ml-6">
+          <label class="mb-1 block text-sm font-medium text-gray-700">Abholadresse</label>
+          <textarea x-model="globalSettings.pickupAddress" rows="3" class="w-full max-w-md rounded border-gray-300 text-sm" placeholder="Musterstrasse 1"></textarea>
+        </div>
+
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="globalSettings.showDeliveryTime" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">Lieferzeit auf Produktseiten anzeigen</span>
+          </label>
+          <p class="ml-6 text-xs text-gray-500">Erforderlich nach deutschem Recht (ButtonLoesung)</p>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Standard-Lieferzeit</label>
+          <input type="text" x-model="globalSettings.defaultDeliveryTime" class="w-full max-w-xs rounded border-gray-300 text-sm" placeholder="z.B. 2-4 Werktage" />
+          <p class="mt-1 text-xs text-gray-500">Wird verwendet, wenn keine spezifische Lieferzeit angegeben</p>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveGlobalSettings()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Speichern</button>
+      </div>
+    </div>
+
+    <!-- Shipping Classes -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">Versandklassen</h2>
+          <p class="text-sm text-gray-500">Fuer Produkte mit speziellen Versandanforderungen</p>
+        </div>
+        <button @click="addShippingClass()" class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700">+ Neue Klasse</button>
+      </div>
+
+      <div class="overflow-hidden rounded-lg border">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Slug</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Beschreibung</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Aufpreis</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <template x-for="sc in shippingClasses" :key="sc.id">
+              <tr>
+                <td class="px-4 py-3"><input type="text" x-model="sc.name" class="w-full rounded border-gray-300 text-sm" /></td>
+                <td class="px-4 py-3"><input type="text" x-model="sc.slug" class="w-full rounded border-gray-300 text-sm" /></td>
+                <td class="px-4 py-3"><input type="text" x-model="sc.description" class="w-full rounded border-gray-300 text-sm" /></td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-1">
+                    <input type="number" x-model.number="sc.surcharge" step="0.01" min="0" class="w-20 rounded border-gray-300 text-sm" />
+                    <span class="text-gray-500">EUR</span>
+                  </div>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                  <button @click="deleteShippingClass(sc.id)" class="text-red-600 hover:text-red-800">Loeschen</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveShippingClasses()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Versandklassen speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function shippingSettings() {
+      return {
+        zones: [
+          { id: "1", name: "Deutschland", countries: ["DE"], methods: [
+            { id: "1", name: "Standardversand", price: 4.99, freeFrom: 50, deliveryTime: "2-4 Werktage", active: true },
+            { id: "2", name: "Expressversand", price: 9.99, freeFrom: null, deliveryTime: "1-2 Werktage", active: true },
+          ]},
+          { id: "2", name: "EU", countries: ["AT", "NL", "BE", "FR", "PL", "CZ", "IT", "ES"], methods: [
+            { id: "3", name: "EU-Versand", price: 9.99, freeFrom: 100, deliveryTime: "5-7 Werktage", active: true },
+          ]},
+          { id: "3", name: "Schweiz", countries: ["CH"], methods: [
+            { id: "4", name: "Schweiz-Versand", price: 14.99, freeFrom: 150, deliveryTime: "5-10 Werktage", active: true },
+          ]},
+        ],
+        globalSettings: {
+          originCountry: "DE",
+          calculateByWeight: false,
+          defaultWeight: 0.5,
+          pricePerKg: 2.50,
+          enableLocalPickup: false,
+          pickupAddress: "",
+          showDeliveryTime: true,
+          defaultDeliveryTime: "2-4 Werktage",
+        },
+        shippingClasses: [
+          { id: "1", name: "Standard", slug: "standard", description: "Normale Pakete", surcharge: 0 },
+          { id: "2", name: "Sperrgut", slug: "bulky", description: "Grosse oder schwere Artikel", surcharge: 15.00 },
+          { id: "3", name: "Zerbrechlich", slug: "fragile", description: "Erfordert Spezialverpackung", surcharge: 5.00 },
+        ],
+        saving: false,
+
+        addZone() {
+          this.zones.push({ id: crypto.randomUUID(), name: "Neue Zone", countries: [], methods: [] });
+        },
+
+        deleteZone(id) {
+          this.zones = this.zones.filter(z => z.id !== id);
+        },
+
+        addMethod(zoneId) {
+          const zone = this.zones.find(z => z.id === zoneId);
+          if (zone) {
+            zone.methods.push({ id: crypto.randomUUID(), name: "Neue Methode", price: 0, freeFrom: null, deliveryTime: "", active: true });
+          }
+        },
+
+        deleteMethod(zoneId, methodId) {
+          const zone = this.zones.find(z => z.id === zoneId);
+          if (zone) { zone.methods = zone.methods.filter(m => m.id !== methodId); }
+        },
+
+        addShippingClass() {
+          this.shippingClasses.push({ id: crypto.randomUUID(), name: "Neue Klasse", slug: "neue-klasse", description: "", surcharge: 0 });
+        },
+
+        deleteShippingClass(id) {
+          this.shippingClasses = this.shippingClasses.filter(sc => sc.id !== id);
+        },
+
+        async saveZones() {
+          this.saving = true;
+          try { await new Promise(r => setTimeout(r, 500)); Alpine.store("notifications").add("success", "Versandzonen gespeichert"); }
+          finally { this.saving = false; }
+        },
+
+        async saveGlobalSettings() {
+          this.saving = true;
+          try { await new Promise(r => setTimeout(r, 500)); Alpine.store("notifications").add("success", "Versandeinstellungen gespeichert"); }
+          finally { this.saving = false; }
+        },
+
+        async saveShippingClasses() {
+          this.saving = true;
+          try { await new Promise(r => setTimeout(r, 500)); Alpine.store("notifications").add("success", "Versandklassen gespeichert"); }
+          finally { this.saving = false; }
+        },
+      };
+    }
+  </script>
+</SettingsLayout>

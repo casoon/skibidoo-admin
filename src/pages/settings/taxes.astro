@@ -1,0 +1,287 @@
+---
+import SettingsLayout from "@/layouts/SettingsLayout.astro";
+---
+
+<SettingsLayout>
+  <div class="space-y-6" x-data="taxSettings()">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Steuereinstellungen</h1>
+    </div>
+
+    <!-- Tax Classes -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Steuerklassen</h2>
+        <button
+          @click="addTaxClass()"
+          class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
+        >
+          + Neue Steuerklasse
+        </button>
+      </div>
+
+      <div class="overflow-hidden rounded-lg border">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Beschreibung</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Standard</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <template x-for="taxClass in taxClasses" :key="taxClass.id">
+              <tr>
+                <td class="whitespace-nowrap px-4 py-3">
+                  <input
+                    type="text"
+                    x-model="taxClass.name"
+                    class="w-full rounded border-gray-300 text-sm"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <input
+                    type="text"
+                    x-model="taxClass.description"
+                    class="w-full rounded border-gray-300 text-sm"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <input
+                    type="radio"
+                    name="defaultTaxClass"
+                    :checked="taxClass.isDefault"
+                    @change="setDefaultTaxClass(taxClass.id)"
+                    class="text-primary-600"
+                  />
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                  <button
+                    @click="deleteTaxClass(taxClass.id)"
+                    class="text-red-600 hover:text-red-800"
+                    :disabled="taxClass.isDefault"
+                    :class="taxClass.isDefault && opacity-50cursor-not-allowed"
+                  >
+                    Loeschen
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button
+          @click="saveTaxClasses()"
+          :disabled="saving"
+          class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
+        >
+          Steuerklassen speichern
+        </button>
+      </div>
+    </div>
+
+    <!-- Tax Rates -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Steuersaetze</h2>
+        <button
+          @click="addTaxRate()"
+          class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
+        >
+          + Neuer Steuersatz
+        </button>
+      </div>
+
+      <div class="overflow-hidden rounded-lg border">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Steuerklasse</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Land</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Satz (%)</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Prioritaet</th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <template x-for="rate in taxRates" :key="rate.id">
+              <tr>
+                <td class="px-4 py-3">
+                  <select x-model="rate.taxClassId" class="w-full rounded border-gray-300 text-sm">
+                    <template x-for="tc in taxClasses" :key="tc.id">
+                      <option :value="tc.id" x-text="tc.name"></option>
+                    </template>
+                  </select>
+                </td>
+                <td class="px-4 py-3">
+                  <select x-model="rate.country" class="w-full rounded border-gray-300 text-sm">
+                    <option value="*">Alle Laender</option>
+                    <option value="DE">Deutschland</option>
+                    <option value="AT">Oesterreich</option>
+                    <option value="CH">Schweiz</option>
+                  </select>
+                </td>
+                <td class="px-4 py-3">
+                  <input type="text" x-model="rate.name" class="w-full rounded border-gray-300 text-sm" />
+                </td>
+                <td class="px-4 py-3">
+                  <input type="number" x-model.number="rate.rate" step="0.01" min="0" max="100" class="w-24 rounded border-gray-300 text-sm" />
+                </td>
+                <td class="px-4 py-3">
+                  <input type="number" x-model.number="rate.priority" min="0" class="w-16 rounded border-gray-300 text-sm" />
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                  <button @click="deleteTaxRate(rate.id)" class="text-red-600 hover:text-red-800">Loeschen</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button
+          @click="saveTaxRates()"
+          :disabled="saving"
+          class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
+        >
+          Steuersaetze speichern
+        </button>
+      </div>
+    </div>
+
+    <!-- Tax Display Settings -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">Anzeige-Einstellungen</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Preise im Shop anzeigen als</label>
+          <div class="mt-2 space-y-2">
+            <label class="flex items-center gap-2">
+              <input type="radio" x-model="displaySettings.pricesIncludeTax" :value="true" class="text-primary-600" />
+              <span class="text-sm">Bruttopreise (inkl. MwSt.)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="radio" x-model="displaySettings.pricesIncludeTax" :value="false" class="text-primary-600" />
+              <span class="text-sm">Nettopreise (zzgl. MwSt.)</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="displaySettings.showTaxInCart" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">MwSt. im Warenkorb separat anzeigen</span>
+          </label>
+        </div>
+        <div>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="displaySettings.showTaxSuffix" class="rounded border-gray-300 text-primary-600" />
+            <span class="text-sm">"inkl. MwSt." bei Preisen anzeigen</span>
+          </label>
+        </div>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button
+          @click="saveDisplaySettings()"
+          :disabled="saving"
+          class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
+        >
+          Speichern
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function taxSettings() {
+      return {
+        taxClasses: [
+          { id: "1", name: "Standard", description: "Normaler Steuersatz", isDefault: true },
+          { id: "2", name: "Ermaessigt", description: "Ermaessigter Steuersatz (Lebensmittel, Buecher)", isDefault: false },
+          { id: "3", name: "Steuerfrei", description: "Keine Steuer", isDefault: false },
+        ],
+        taxRates: [
+          { id: "1", taxClassId: "1", country: "DE", name: "MwSt. 19%", rate: 19, priority: 1 },
+          { id: "2", taxClassId: "1", country: "AT", name: "MwSt. 20%", rate: 20, priority: 1 },
+          { id: "3", taxClassId: "1", country: "CH", name: "MwSt. 8.1%", rate: 8.1, priority: 1 },
+          { id: "4", taxClassId: "2", country: "DE", name: "MwSt. 7%", rate: 7, priority: 1 },
+          { id: "5", taxClassId: "2", country: "AT", name: "MwSt. 10%", rate: 10, priority: 1 },
+          { id: "6", taxClassId: "3", country: "*", name: "Steuerfrei", rate: 0, priority: 1 },
+        ],
+        displaySettings: {
+          pricesIncludeTax: true,
+          showTaxInCart: true,
+          showTaxSuffix: true,
+        },
+        saving: false,
+
+        addTaxClass() {
+          this.taxClasses.push({
+            id: crypto.randomUUID(),
+            name: "Neue Steuerklasse",
+            description: "",
+            isDefault: false,
+          });
+        },
+
+        deleteTaxClass(id) {
+          this.taxClasses = this.taxClasses.filter(tc => tc.id !== id);
+          this.taxRates = this.taxRates.filter(r => r.taxClassId !== id);
+        },
+
+        setDefaultTaxClass(id) {
+          this.taxClasses.forEach(tc => tc.isDefault = tc.id === id);
+        },
+
+        addTaxRate() {
+          this.taxRates.push({
+            id: crypto.randomUUID(),
+            taxClassId: this.taxClasses[0]?.id || "",
+            country: "DE",
+            name: "Neuer Steuersatz",
+            rate: 19,
+            priority: 1,
+          });
+        },
+
+        deleteTaxRate(id) {
+          this.taxRates = this.taxRates.filter(r => r.id !== id);
+        },
+
+        async saveTaxClasses() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "Steuerklassen gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async saveTaxRates() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "Steuersaetze gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async saveDisplaySettings() {
+          this.saving = true;
+          try {
+            await new Promise(r => setTimeout(r, 500));
+            Alpine.store("notifications").add("success", "Anzeige-Einstellungen gespeichert");
+          } finally {
+            this.saving = false;
+          }
+        },
+      };
+    }
+  </script>
+</SettingsLayout>

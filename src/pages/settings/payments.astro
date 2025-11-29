@@ -1,0 +1,309 @@
+---
+import SettingsLayout from "@/layouts/SettingsLayout.astro";
+---
+
+<SettingsLayout>
+  <div class="space-y-6" x-data="paymentSettings()">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Zahlungseinstellungen</h1>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">Zahlungsmethoden</h2>
+
+      <div class="space-y-4">
+        <!-- Stripe -->
+        <div class="rounded-lg border p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
+                <svg class="h-6 w-6 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-medium">Stripe</h3>
+                <p class="text-sm text-gray-500">Kreditkarten, Apple Pay, Google Pay, SEPA</p>
+              </div>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" x-model="methods.stripe.enabled" class="peer sr-only" />
+              <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[\\\] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+            </label>
+          </div>
+
+          <div x-show="methods.stripe.enabled" class="mt-4 space-y-4 border-t pt-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Publishable Key</label>
+                <input type="text" x-model="methods.stripe.publishableKey" class="w-full rounded border-gray-300 text-sm font-mono" placeholder="pk_live_..." />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Secret Key</label>
+                <input type="password" x-model="methods.stripe.secretKey" class="w-full rounded border-gray-300 text-sm font-mono" placeholder="sk_live_..." />
+              </div>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Webhook Secret</label>
+              <input type="password" x-model="methods.stripe.webhookSecret" class="w-full rounded border-gray-300 text-sm font-mono" placeholder="whsec_..." />
+            </div>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" x-model="methods.stripe.testMode" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Testmodus</span>
+              </label>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-700">Aktivierte Zahlungsmethoden</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <input type="checkbox" x-model="methods.stripe.paymentMethods.card" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">Kreditkarte</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <input type="checkbox" x-model="methods.stripe.paymentMethods.sepa" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">SEPA-Lastschrift</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <input type="checkbox" x-model="methods.stripe.paymentMethods.giropay" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">Giropay</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <input type="checkbox" x-model="methods.stripe.paymentMethods.sofort" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">Sofort/Klarna</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <input type="checkbox" x-model="methods.stripe.paymentMethods.applePay" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">Apple Pay</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <input type="checkbox" x-model="methods.stripe.paymentMethods.googlePay" class="rounded border-gray-300 text-primary-600" />
+                  <span class="text-sm">Google Pay</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PayPal -->
+        <div class="rounded-lg border p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                <svg class="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-medium">PayPal</h3>
+                <p class="text-sm text-gray-500">PayPal-Konto, Kreditkarte via PayPal</p>
+              </div>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" x-model="methods.paypal.enabled" class="peer sr-only" />
+              <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[\\\] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+            </label>
+          </div>
+
+          <div x-show="methods.paypal.enabled" class="mt-4 space-y-4 border-t pt-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Client ID</label>
+                <input type="text" x-model="methods.paypal.clientId" class="w-full rounded border-gray-300 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Client Secret</label>
+                <input type="password" x-model="methods.paypal.clientSecret" class="w-full rounded border-gray-300 text-sm font-mono" />
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" x-model="methods.paypal.sandbox" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Sandbox-Modus</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice / Kauf auf Rechnung -->
+        <div class="rounded-lg border p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-medium">Kauf auf Rechnung</h3>
+                <p class="text-sm text-gray-500">Zahlung nach Erhalt der Ware</p>
+              </div>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" x-model="methods.invoice.enabled" class="peer sr-only" />
+              <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[\\\] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+            </label>
+          </div>
+
+          <div x-show="methods.invoice.enabled" class="mt-4 space-y-4 border-t pt-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Mindestbestellwert (EUR)</label>
+                <input type="number" x-model.number="methods.invoice.minOrderValue" step="0.01" min="0" class="w-full rounded border-gray-300 text-sm" />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Zahlungsziel (Tage)</label>
+                <input type="number" x-model.number="methods.invoice.paymentTermDays" min="1" class="w-full rounded border-gray-300 text-sm" />
+              </div>
+            </div>
+            <div>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" x-model="methods.invoice.requireRegistration" class="rounded border-gray-300 text-primary-600" />
+                <span class="text-sm">Nur fuer registrierte Kunden</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Transfer / Vorkasse -->
+        <div class="rounded-lg border p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-medium">Vorkasse</h3>
+                <p class="text-sm text-gray-500">Bankueberweisung vor Versand</p>
+              </div>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" x-model="methods.bankTransfer.enabled" class="peer sr-only" />
+              <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[\\\] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+            </label>
+          </div>
+
+          <div x-show="methods.bankTransfer.enabled" class="mt-4 space-y-4 border-t pt-4">
+            <p class="text-sm text-gray-500">Die Bankverbindung wird aus den allgemeinen Einstellungen uebernommen.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveMethods()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Zahlungsmethoden speichern</button>
+      </div>
+    </div>
+
+    <!-- Currency Settings -->
+    <div class="rounded-lg bg-white p-6 shadow">
+      <h2 class="mb-4 text-lg font-semibold">Waehrungseinstellungen</h2>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Standardwaehrung</label>
+            <select x-model="currency.default" class="w-full rounded border-gray-300 text-sm">
+              <option value="EUR">Euro (EUR)</option>
+              <option value="CHF">Schweizer Franken (CHF)</option>
+              <option value="USD">US-Dollar (USD)</option>
+              <option value="GBP">Britisches Pfund (GBP)</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Waehrungsposition</label>
+            <select x-model="currency.position" class="w-full rounded border-gray-300 text-sm">
+              <option value="before">Vor dem Betrag (EUR 19,99)</option>
+              <option value="after">Nach dem Betrag (19,99 EUR)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Dezimaltrennzeichen</label>
+            <select x-model="currency.decimalSeparator" class="w-full rounded border-gray-300 text-sm">
+              <option value=",">Komma (,)</option>
+              <option value=".">Punkt (.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Tausendertrennzeichen</label>
+            <select x-model="currency.thousandsSeparator" class="w-full rounded border-gray-300 text-sm">
+              <option value=".">Punkt (.)</option>
+              <option value=",">Komma (,)</option>
+              <option value=" ">Leerzeichen</option>
+              <option value="">Keines</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Nachkommastellen</label>
+          <select x-model="currency.decimals" class="w-full max-w-xs rounded border-gray-300 text-sm">
+            <option value="0">0</option>
+            <option value="2">2</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button @click="saveCurrency()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-50">Waehrungseinstellungen speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function paymentSettings() {
+      return {
+        methods: {
+          stripe: {
+            enabled: true,
+            publishableKey: "",
+            secretKey: "",
+            webhookSecret: "",
+            testMode: true,
+            paymentMethods: { card: true, sepa: true, giropay: true, sofort: false, applePay: true, googlePay: true },
+          },
+          paypal: {
+            enabled: false,
+            clientId: "",
+            clientSecret: "",
+            sandbox: true,
+          },
+          invoice: {
+            enabled: false,
+            minOrderValue: 50,
+            paymentTermDays: 14,
+            requireRegistration: true,
+          },
+          bankTransfer: {
+            enabled: true,
+          },
+        },
+        currency: {
+          default: "EUR",
+          position: "after",
+          decimalSeparator: ",",
+          thousandsSeparator: ".",
+          decimals: "2",
+        },
+        saving: false,
+
+        async saveMethods() {
+          this.saving = true;
+          try { await new Promise(r => setTimeout(r, 500)); Alpine.store("notifications").add("success", "Zahlungsmethoden gespeichert"); }
+          finally { this.saving = false; }
+        },
+
+        async saveCurrency() {
+          this.saving = true;
+          try { await new Promise(r => setTimeout(r, 500)); Alpine.store("notifications").add("success", "Waehrungseinstellungen gespeichert"); }
+          finally { this.saving = false; }
+        },
+      };
+    }
+  </script>
+</SettingsLayout>
