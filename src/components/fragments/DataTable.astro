@@ -1,0 +1,87 @@
+---
+interface Column {
+  key: string;
+  label: string;
+  sortable?: boolean;
+}
+
+interface Props {
+  columns: Column[];
+  rows: Record<string, any>[];
+  emptyMessage?: string;
+  editUrl?: string;
+  deleteEndpoint?: string;
+}
+
+const { columns, rows, emptyMessage = "Keine Daten vorhanden", editUrl, deleteEndpoint } = Astro.props;
+---
+
+<div class="overflow-x-auto rounded-lg border bg-white shadow">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        {columns.map((col) => (
+          <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            {col.sortable ? (
+              <button 
+                class="flex items-center gap-1 hover:text-gray-700"
+                hx-get={`?sort=${col.key}`}
+                hx-target="closest table"
+                hx-swap="outerHTML"
+              >
+                {col.label}
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </button>
+            ) : col.label}
+          </th>
+        ))}
+        {(editUrl || deleteEndpoint) && (
+          <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+            Aktionen
+          </th>
+        )}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-200">
+      {rows.length === 0 ? (
+        <tr>
+          <td colspan={columns.length + 1} class="px-6 py-12 text-center text-gray-500">
+            {emptyMessage}
+          </td>
+        </tr>
+      ) : (
+        rows.map((row) => (
+          <tr class="hover:bg-gray-50">
+            {columns.map((col) => (
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                {row[col.key]}
+              </td>
+            ))}
+            {(editUrl || deleteEndpoint) && (
+              <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                {editUrl && (
+                  <a href={`${editUrl}/${row.id}`} class="text-blue-600 hover:text-blue-800 mr-4">
+                    Bearbeiten
+                  </a>
+                )}
+                {deleteEndpoint && (
+                  <button
+                    class="text-red-600 hover:text-red-800"
+                    hx-delete={`${deleteEndpoint}/${row.id}`}
+                    hx-target="closest tr"
+                    hx-swap="outerHTML swap:0.3s"
+                    hx-confirm="Wirklich loeschen?"
+                  >
+                    Loeschen
+                  </button>
+                )}
+              </td>
+            )}
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>

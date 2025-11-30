@@ -1,0 +1,42 @@
+---
+interface Props {
+  title: string;
+  value: string | number;
+  change?: number;
+  icon?: string;
+  href?: string;
+}
+
+const { title, value, change, icon, href } = Astro.props;
+const isPositive = change && change > 0;
+const isNegative = change && change < 0;
+---
+
+<div class="rounded-lg bg-white p-6 shadow">
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-sm font-medium text-gray-500">{title}</p>
+      <p class="mt-1 text-3xl font-bold text-gray-900">{value}</p>
+      {change !== undefined && (
+        <p class:list={[
+          "mt-1 text-sm",
+          isPositive && "text-green-600",
+          isNegative && "text-red-600",
+          !isPositive && !isNegative && "text-gray-500"
+        ]}>
+          {isPositive && "+"}{change}% vs. Vormonat
+        </p>
+      )}
+    </div>
+    {icon && (
+      <div class="rounded-full bg-blue-100 p-3">
+        <Fragment set:html={icon} />
+      </div>
+    )}
+  </div>
+  {href && (
+    <a href={href} class="mt-4 block text-sm text-blue-600 hover:text-blue-800">
+      Details anzeigen &rarr;
+    </a>
+  )}
+</div>

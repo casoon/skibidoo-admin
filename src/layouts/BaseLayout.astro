@@ -13,8 +13,79 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title} - Skibidoo Admin</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://unpkg.com" />
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
   </head>
-  <body class="min-h-screen bg-gray-100" x-data>
+  <body class="min-h-screen bg-gray-100" x-data hx-boost="true">
     <slot />
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+    
+    <script is:inline>
+      // Alpine Stores
+      document.addEventListener('alpine:init', () => {
+        Alpine.store('sidebar', {
+          open: localStorage.getItem('sidebar-open') !== 'false',
+          toggle() {
+            this.open = !this.open;
+            localStorage.setItem('sidebar-open', this.open);
+          }
+        });
+        
+        Alpine.store('auth', {
+          isAuthenticated: !!localStorage.getItem('admin-token'),
+          token: localStorage.getItem('admin-token'),
+          login(token) {
+            this.token = token;
+            this.isAuthenticated = true;
+            localStorage.setItem('admin-token', token);
+          },
+          logout() {
+            this.token = null;
+            this.isAuthenticated = false;
+            localStorage.removeItem('admin-token');
+            window.location.href = '/login';
+          }
+        });
+        
+        Alpine.store('notifications', {
+          items: [],
+          add(message, type = 'info') {
+            const id = Date.now();
+            this.items.push({ id, message, type });
+            setTimeout(() => this.remove(id), 5000);
+          },
+          remove(id) {
+            this.items = this.items.filter(n => n.id !== id);
+          }
+        });
+      });
+      
+      // HTMX Event Handlers
+      function showToast(message, type = 'success') {
+        if (window.Alpine) {
+          Alpine.store('notifications').add(message, type);
+        }
+      }
+      
+      document.body.addEventListener('showToast', function(evt) {
+        showToast(evt.detail.message, evt.detail.type);
+      });
+      
+      document.body.addEventListener('htmx:responseError', function(evt) {
+        showToast('Ein Fehler ist aufgetreten', 'error');
+      });
+    </script>
+    
+    <style>
+      [x-cloak] { display: none !important; }
+    </style>
   </body>
 </html>
