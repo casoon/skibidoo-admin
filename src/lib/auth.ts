@@ -27,7 +27,7 @@ interface RefreshResponse {
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const response = await fetch(`${API_URL}/admin/auth/login`, {
+  const response = await fetch(`${API_URL}/api/v1/admin/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -45,14 +45,14 @@ export async function logout(): Promise<void> {
   const token = getAuthToken();
   if (!token) return;
 
-  await fetch(`${API_URL}/admin/auth/logout`, {
+  await fetch(`${API_URL}/api/v1/admin/auth/logout`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   }).catch(() => {});
 }
 
 export async function refreshToken(refreshToken: string): Promise<RefreshResponse> {
-  const response = await fetch(`${API_URL}/admin/auth/refresh`, {
+  const response = await fetch(`${API_URL}/api/v1/admin/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
@@ -70,7 +70,7 @@ export async function validateSession(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const response = await fetch(`${API_URL}/admin/auth/me`, {
+    const response = await fetch(`${API_URL}/api/v1/admin/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.ok;
