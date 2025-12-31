@@ -32,23 +32,17 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
             }
 
             const { user, accessToken, refreshToken } = result.data;
-            
-            // Store tokens
-            localStorage.setItem('admin_token', JSON.stringify(accessToken));
-            localStorage.setItem('admin_refresh_token', JSON.stringify(refreshToken));
-            localStorage.setItem('admin_user', JSON.stringify({
-              id: user.id,
-              email: user.email,
-              name: user.firstName + ' ' + user.lastName
-            }));
 
-            // Update Alpine store
+            // Use Alpine store - $persist handles localStorage automatically
             $store.auth.token = accessToken;
             $store.auth.user = {
               id: user.id,
               email: user.email,
-              name: user.firstName + ' ' + user.lastName
+              name: (user.firstName || '') + ' ' + (user.lastName || '')
             };
+
+            // Store refresh token separately
+            localStorage.setItem('admin_refresh_token', JSON.stringify(refreshToken));
 
             window.location.href = '/';
           } catch (e) {

@@ -125,7 +125,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
     </div>
   </div>
 
-  <script>
+  <script is:inline>
     function dashboard() {
       return {
         stats: {
@@ -164,7 +164,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 
         async loadRecentOrders() {
           try {
-            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const API_URL = window.__API_URL__ || "http://localhost:3000";
             const token = localStorage.getItem("admin_token");
             const response = await fetch(`${API_URL}/trpc/order.list?input=${encodeURIComponent(JSON.stringify({ json: { limit: 5 } }))}`, {
               headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},
@@ -180,7 +180,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 
         async loadLowStock() {
           try {
-            const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";
+            const API_URL = window.__API_URL__ || "http://localhost:3000";
             const token = localStorage.getItem("admin_token");
             const response = await fetch(`${API_URL}/trpc/product.list?input=${encodeURIComponent(JSON.stringify({ json: { limit: 5, lowStock: true } }))}`, {
               headers: token ? { Authorization: `Bearer ${JSON.parse(token)}` } : {},

@@ -9,12 +9,24 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
       <button @click="showAddUser = true" class="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700">+ Neuer Benutzer</button>
     </div>
 
+    <!-- Loading State -->
+    <div x-show="loading" class="flex items-center justify-center py-12">
+      <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"></div>
+      <span class="ml-3 text-gray-600">Benutzer werden geladen...</span>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="error && !loading" class="rounded-lg bg-red-50 p-4 text-red-700">
+      <p x-text="error"></p>
+      <button @click="loadUsers()" class="mt-2 text-sm underline">Erneut versuchen</button>
+    </div>
+
     <!-- Users Table -->
-    <div class="rounded-lg bg-white shadow">
+    <div x-show="!loading && !error" class="rounded-lg bg-white shadow">
       <div class="border-b px-6 py-4">
         <div class="flex items-center justify-between">
           <h2 class="font-semibold">Administratoren</h2>
-          <input type="text" x-model="searchQuery" placeholder="Suchen..." class="rounded border-gray-300 text-sm" />
+          <input type="text" x-model="searchQuery" @input.debounce.300ms="loadUsers()" placeholder="Suchen..." class="rounded border-gray-300 text-sm" />
         </div>
       </div>
 
@@ -31,13 +43,13 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 bg-white">
-            <template x-for="user in filteredUsers" :key="user.id">
+            <template x-for="user in users" :key="user.id">
               <tr>
                 <td class="whitespace-nowrap px-6 py-4">
                   <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700 font-medium" x-text="user.name.charAt(0).toUpperCase()"></div>
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700 font-medium" x-text="getInitials(user)"></div>
                     <div>
-                      <div class="font-medium text-gray-900" x-text="user.name"></div>
+                      <div class="font-medium text-gray-900" x-text="getDisplayName(user)"></div>
                       <div class="text-sm text-gray-500" x-text="user.email"></div>
                     </div>
                   </div>
@@ -46,12 +58,12 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
                   <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold" :class="getRoleBadgeClass(user.role)" x-text="getRoleLabel(user.role)"></span>
                 </td>
                 <td class="whitespace-nowrap px-6 py-4">
-                  <span class="inline-flex items-center gap-1 text-sm" :class="user.active ? `text-green-600` : `text-gray-400`">
-                    <span class="h-2 w-2 rounded-full" :class="user.active ? `bg-green-500` : `bg-gray-300`"></span>
-                    <span x-text="user.active ? `Aktiv` : `Inaktiv`"></span>
+                  <span class="inline-flex items-center gap-1 text-sm" :class="user.isActive ? 'text-green-600' : 'text-gray-400'">
+                    <span class="h-2 w-2 rounded-full" :class="user.isActive ? 'bg-green-500' : 'bg-gray-300'"></span>
+                    <span x-text="user.isActive ? 'Aktiv' : 'Inaktiv'></span>
                   </span>
                 </td>
-                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500" x-text="user.lastLogin || `Nie`"></td>
+                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500" x-text="formatDate(user.lastLoginAt)"></td>
                 <td class="whitespace-nowrap px-6 py-4">
                   <span x-show="user.twoFactorEnabled" class="text-green-600">
                     <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -67,13 +79,28 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
                 <td class="whitespace-nowrap px-6 py-4 text-right">
                   <div class="flex justify-end gap-2">
                     <button @click="editUser(user)" class="text-primary-600 hover:text-primary-800">Bearbeiten</button>
-                    <button @click="deleteUser(user)" class="text-red-600 hover:text-red-800" :disabled="user.role === `owner`" :class="user.role === `owner` && `opacity-50 cursor-not-allowed`">Loeschen</button>
+                    <button @click="deleteUser(user)" class="text-red-600 hover:text-red-800" :disabled="user.role === 'super_admin'" :class="user.role === 'super_admin' && 'opacity-50 cursor-not-allowed'">Loeschen</button>
                   </div>
                 </td>
               </tr>
             </template>
+            <tr x-show="users.length === 0 && !loading">
+              <td colspan="6" class="px-6 py-8 text-center text-gray-500">Keine Benutzer gefunden</td>
+            </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div x-show="pagination.totalPages > 1" class="flex items-center justify-between border-t px-6 py-4">
+        <div class="text-sm text-gray-500">
+          Seite <span x-text="pagination.page"></span> von <span x-text="pagination.totalPages"></span>
+          (<span x-text="pagination.total"></span> Benutzer)
+        </div>
+        <div class="flex gap-2">
+          <button @click="goToPage(pagination.page - 1)" :disabled="pagination.page <= 1" class="rounded border px-3 py-1 text-sm disabled:opacity-50">Zurueck</button>
+          <button @click="goToPage(pagination.page + 1)" :disabled="pagination.page >= pagination.totalPages" class="rounded border px-3 py-1 text-sm disabled:opacity-50">Weiter</button>
+        </div>
       </div>
     </div>
 
@@ -81,7 +108,6 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
     <div class="rounded-lg bg-white p-6 shadow">
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-lg font-semibold">Rollen & Berechtigungen</h2>
-        <button @click="showAddRole = true" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">+ Neue Rolle</button>
       </div>
 
       <div class="space-y-4">
@@ -92,11 +118,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
                 <h3 class="font-medium" x-text="role.name"></h3>
                 <p class="text-sm text-gray-500" x-text="role.description"></p>
               </div>
-              <div class="flex gap-2" x-show="!role.system">
-                <button @click="editRole(role)" class="text-sm text-primary-600 hover:text-primary-800">Bearbeiten</button>
-                <button @click="deleteRole(role)" class="text-sm text-red-600 hover:text-red-800">Loeschen</button>
-              </div>
-              <span x-show="role.system" class="text-xs text-gray-400">Systemrolle</span>
+              <span class="text-xs text-gray-400">Systemrolle</span>
             </div>
 
             <div class="flex flex-wrap gap-2">
@@ -109,31 +131,21 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
       </div>
     </div>
 
-    <!-- Activity Log -->
-    <div class="rounded-lg bg-white p-6 shadow">
-      <h2 class="mb-4 text-lg font-semibold">Aktivitaetsprotokoll</h2>
-      <div class="space-y-3">
-        <template x-for="log in activityLogs" :key="log.id">
-          <div class="flex items-start gap-3 text-sm">
-            <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600" x-text="log.user.charAt(0)"></div>
-            <div class="flex-1">
-              <p><span class="font-medium" x-text="log.user"></span> <span x-text="log.action"></span></p>
-              <p class="text-gray-500" x-text="log.timestamp"></p>
-            </div>
-          </div>
-        </template>
-      </div>
-    </div>
-
     <!-- Add/Edit User Modal -->
     <div x-show="showAddUser || editingUser" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="closeUserModal()">
       <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 class="mb-4 text-lg font-semibold" x-text="editingUser ? `Benutzer bearbeiten` : `Neuer Benutzer`"></h3>
+        <h3 class="mb-4 text-lg font-semibold" x-text="editingUser ? 'Benutzer bearbeiten' : 'Neuer Benutzer'"></h3>
 
         <div class="space-y-4">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">Name</label>
-            <input type="text" x-model="userForm.name" class="w-full rounded border-gray-300 text-sm" />
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Vorname</label>
+              <input type="text" x-model="userForm.firstName" class="w-full rounded border-gray-300 text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700">Nachname</label>
+              <input type="text" x-model="userForm.lastName" class="w-full rounded border-gray-300 text-sm" />
+            </div>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">E-Mail</label>
@@ -141,93 +153,164 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
           </div>
           <div x-show="!editingUser">
             <label class="mb-1 block text-sm font-medium text-gray-700">Passwort</label>
-            <input type="password" x-model="userForm.password" class="w-full rounded border-gray-300 text-sm" />
+            <input type="password" x-model="userForm.password" class="w-full rounded border-gray-300 text-sm" placeholder="Min. 8 Zeichen" />
+          </div>
+          <div x-show="editingUser">
+            <label class="mb-1 block text-sm font-medium text-gray-700">Neues Passwort (optional)</label>
+            <input type="password" x-model="userForm.password" class="w-full rounded border-gray-300 text-sm" placeholder="Leer lassen fuer keine Aenderung" />
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">Rolle</label>
             <select x-model="userForm.role" class="w-full rounded border-gray-300 text-sm">
-              <template x-for="role in roles" :key="role.id">
-                <option :value="role.id" x-text="role.name"></option>
-              </template>
+              <option value="editor">Redakteur</option>
+              <option value="admin">Administrator</option>
+              <option value="super_admin">Super-Administrator</option>
             </select>
           </div>
           <div>
             <label class="flex items-center gap-2">
-              <input type="checkbox" x-model="userForm.active" class="rounded border-gray-300 text-primary-600" />
+              <input type="checkbox" x-model="userForm.isActive" class="rounded border-gray-300 text-primary-600" />
               <span class="text-sm">Aktiv</span>
-            </label>
-          </div>
-          <div>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" x-model="userForm.requireTwoFactor" class="rounded border-gray-300 text-primary-600" />
-              <span class="text-sm">2FA erforderlich</span>
             </label>
           </div>
         </div>
 
         <div class="mt-6 flex justify-end gap-3">
           <button @click="closeUserModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Abbrechen</button>
-          <button @click="saveUser()" class="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700">Speichern</button>
+          <button @click="saveUser()" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700 disabled:opacity-50">
+            <span x-show="!saving">Speichern</span>
+            <span x-show="saving">Speichern...</span>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
+  <script is:inline>
     function userManagement() {
       return {
         searchQuery: "",
         showAddUser: false,
-        showAddRole: false,
         editingUser: null,
-        userForm: { name: "", email: "", password: "", role: "editor", active: true, requireTwoFactor: false },
-
-        users: [
-          { id: "1", name: "Max Mustermann", email: "max@example.com", role: "owner", active: true, lastLogin: "29.11.2024, 14:30", twoFactorEnabled: true },
-          { id: "2", name: "Anna Schmidt", email: "anna@example.com", role: "admin", active: true, lastLogin: "28.11.2024, 09:15", twoFactorEnabled: true },
-          { id: "3", name: "Peter Mueller", email: "peter@example.com", role: "editor", active: true, lastLogin: "27.11.2024, 16:45", twoFactorEnabled: false },
-          { id: "4", name: "Lisa Weber", email: "lisa@example.com", role: "viewer", active: false, lastLogin: "15.11.2024, 11:00", twoFactorEnabled: false },
-        ],
+        loading: true,
+        saving: false,
+        error: null,
+        users: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        userForm: { firstName: "", lastName: "", email: "", password: "", role: "editor", isActive: true },
 
         roles: [
-          { id: "owner", name: "Inhaber", description: "Vollzugriff auf alle Funktionen", system: true, permissions: ["all"] },
-          { id: "admin", name: "Administrator", description: "Vollzugriff ausser Inhaberfunktionen", system: true, permissions: ["products", "orders", "customers", "settings", "reports", "users"] },
-          { id: "editor", name: "Redakteur", description: "Kann Produkte und Inhalte bearbeiten", system: true, permissions: ["products", "orders.view", "customers.view"] },
-          { id: "viewer", name: "Betrachter", description: "Nur Leserechte", system: true, permissions: ["products.view", "orders.view", "customers.view", "reports.view"] },
-          { id: "support", name: "Support", description: "Kundenservice-Zugriff", system: false, permissions: ["orders", "customers", "refunds"] },
+          { id: "super_admin", name: "Super-Administrator", description: "Vollzugriff auf alle Funktionen", permissions: ["all"] },
+          { id: "admin", name: "Administrator", description: "Vollzugriff ausser Super-Admin-Funktionen", permissions: ["products", "orders", "customers", "settings", "reports", "users"] },
+          { id: "editor", name: "Redakteur", description: "Kann Produkte und Inhalte bearbeiten", permissions: ["products", "orders.view", "customers.view"] },
         ],
 
-        activityLogs: [
-          { id: "1", user: "Max Mustermann", action: "hat die Versandeinstellungen geaendert", timestamp: "Heute, 14:32" },
-          { id: "2", user: "Anna Schmidt", action: "hat Bestellung #1234 versendet", timestamp: "Heute, 11:15" },
-          { id: "3", user: "Peter Mueller", action: "hat Produkt T-ShirtBlau bearbeitet", timestamp: "Gestern, 16:45" },
-          { id: "4", user: "Max Mustermann", action: "hat Benutzer LisaWeber deaktiviert", timestamp: "Gestern, 09:30" },
-        ],
+        async init() {
+          await this.loadUsers();
+        },
 
-        get filteredUsers() {
-          if (!this.searchQuery) return this.users;
-          const q = this.searchQuery.toLowerCase();
-          return this.users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+        async loadUsers() {
+          this.loading = true;
+          this.error = null;
+
+          try {
+            var API_URL = window.__API_URL__ || "http://localhost:3000";
+            var token = Alpine.store("auth").token;
+            
+            if (!token) {
+              this.error = "Nicht angemeldet";
+              this.loading = false;
+              return;
+            }
+
+            var params = new URLSearchParams();
+            var inputData = {
+              page: this.pagination.page,
+              limit: this.pagination.limit
+            };
+            if (this.searchQuery) {
+              inputData.search = this.searchQuery;
+            }
+            params.set("input", JSON.stringify(inputData));
+
+            var response = await fetch(API_URL + "/trpc/adminUser.list?" + params, {
+              headers: {
+                Authorization: "Bearer " + token,
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error("HTTP " + response.status);
+            }
+
+            var data = await response.json();
+            
+            if (data.result && data.result.data) {
+              this.users = data.result.data.items || [];
+              this.pagination = data.result.data.pagination || this.pagination;
+            } else if (data.error) {
+              throw new Error(data.error.message || "API Error");
+            }
+          } catch (err) {
+            console.error("Failed to load users:", err);
+            this.error = "Fehler beim Laden der Benutzer: " + err.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        goToPage(page) {
+          if (page < 1 || page > this.pagination.totalPages) return;
+          this.pagination.page = page;
+          this.loadUsers();
+        },
+
+        getInitials(user) {
+          if (user.firstName && user.lastName) {
+            return (user.firstName.charAt(0) + user.lastName.charAt(0)).toUpperCase();
+          }
+          return user.email.charAt(0).toUpperCase();
+        },
+
+        getDisplayName(user) {
+          if (user.firstName || user.lastName) {
+            return [user.firstName, user.lastName].filter(Boolean).join(" ");
+          }
+          return user.email.split("@")[0];
+        },
+
+        formatDate(dateStr) {
+          if (!dateStr) return "Nie";
+          var date = new Date(dateStr);
+          return date.toLocaleDateString("de-DE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
         },
 
         getRoleBadgeClass(role) {
-          const classes = {
-            owner: "bg-purple-100 text-purple-800",
+          var classes = {
+            super_admin: "bg-purple-100 text-purple-800",
             admin: "bg-red-100 text-red-800",
             editor: "bg-blue-100 text-blue-800",
-            viewer: "bg-gray-100 text-gray-800",
-            support: "bg-green-100 text-green-800",
           };
           return classes[role] || "bg-gray-100 text-gray-800";
         },
 
         getRoleLabel(roleId) {
-          const role = this.roles.find(r => r.id === roleId);
-          return role ? role.name : roleId;
+          var labels = {
+            super_admin: "Super-Admin",
+            admin: "Administrator",
+            editor: "Redakteur",
+          };
+          return labels[roleId] || roleId;
         },
 
         getPermissionLabel(perm) {
-          const labels = {
+          var labels = {
             all: "Vollzugriff",
             products: "Produkte",
             "products.view": "Produkte (nur lesen)",
@@ -237,52 +320,136 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
             "customers.view": "Kunden (nur lesen)",
             settings: "Einstellungen",
             reports: "Berichte",
-            "reports.view": "Berichte (nur lesen)",
             users: "Benutzerverwaltung",
-            refunds: "Rueckerstattungen",
           };
           return labels[perm] || perm;
         },
 
         editUser(user) {
           this.editingUser = user;
-          this.userForm = { ...user, password: "" };
+          this.userForm = {
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            email: user.email,
+            password: "",
+            role: user.role,
+            isActive: user.isActive,
+          };
         },
 
-        deleteUser(user) {
-          if (user.role === "owner") return;
-          if (confirm("Benutzer " + user.name + " wirklich loeschen?")) {
-            this.users = this.users.filter(u => u.id !== user.id);
+        async deleteUser(user) {
+          if (user.role === "super_admin") {
+            Alpine.store("notifications").add("error", "Super-Administratoren koennen nicht geloescht werden");
+            return;
+          }
+
+          if (!confirm("Benutzer " + this.getDisplayName(user) + " wirklich loeschen?")) {
+            return;
+          }
+
+          try {
+            var API_URL = window.__API_URL__ || "http://localhost:3000";
+            var token = Alpine.store("auth").token;
+
+            var response = await fetch(API_URL + "/trpc/adminUser.delete", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token,
+              },
+              body: JSON.stringify({ id: user.id }),
+            });
+
+            var data = await response.json();
+
+            if (data.error) {
+              throw new Error(data.error.message || "Loeschen fehlgeschlagen");
+            }
+
             Alpine.store("notifications").add("success", "Benutzer geloescht");
+            await this.loadUsers();
+          } catch (err) {
+            console.error("Delete failed:", err);
+            Alpine.store("notifications").add("error", "Fehler: " + err.message);
           }
         },
 
         closeUserModal() {
           this.showAddUser = false;
           this.editingUser = null;
-          this.userForm = { name: "", email: "", password: "", role: "editor", active: true, requireTwoFactor: false };
+          this.userForm = { firstName: "", lastName: "", email: "", password: "", role: "editor", isActive: true };
         },
 
         async saveUser() {
-          if (this.editingUser) {
-            const idx = this.users.findIndex(u => u.id === this.editingUser.id);
-            if (idx !== -1) this.users[idx] = { ...this.users[idx], ...this.userForm };
-            Alpine.store("notifications").add("success", "Benutzer aktualisiert");
-          } else {
-            this.users.push({ ...this.userForm, id: crypto.randomUUID(), lastLogin: null, twoFactorEnabled: false });
-            Alpine.store("notifications").add("success", "Benutzer erstellt - Einladungs-E-Mail gesendet");
+          if (!this.userForm.email) {
+            Alpine.store("notifications").add("error", "E-Mail ist erforderlich");
+            return;
           }
-          this.closeUserModal();
-        },
 
-        editRole(role) {
-          Alpine.store("notifications").add("info", "Rolleneditor noch nicht implementiert");
-        },
+          if (!this.editingUser && !this.userForm.password) {
+            Alpine.store("notifications").add("error", "Passwort ist erforderlich");
+            return;
+          }
 
-        deleteRole(role) {
-          if (confirm("Rolle " + role.name + " wirklich loeschen?")) {
-            this.roles = this.roles.filter(r => r.id !== role.id);
-            Alpine.store("notifications").add("success", "Rolle geloescht");
+          if (this.userForm.password && this.userForm.password.length < 8) {
+            Alpine.store("notifications").add("error", "Passwort muss mindestens 8 Zeichen haben");
+            return;
+          }
+
+          this.saving = true;
+
+          try {
+            var API_URL = window.__API_URL__ || "http://localhost:3000";
+            var token = Alpine.store("auth").token;
+
+            var endpoint, body;
+
+            if (this.editingUser) {
+              endpoint = API_URL + "/trpc/adminUser.update";
+              body = {
+                id: this.editingUser.id,
+                email: this.userForm.email,
+                role: this.userForm.role,
+                isActive: this.userForm.isActive,
+              };
+              if (this.userForm.firstName) body.firstName = this.userForm.firstName;
+              if (this.userForm.lastName) body.lastName = this.userForm.lastName;
+              if (this.userForm.password) body.password = this.userForm.password;
+            } else {
+              endpoint = API_URL + "/trpc/adminUser.create";
+              body = {
+                email: this.userForm.email,
+                password: this.userForm.password,
+                role: this.userForm.role,
+                isActive: this.userForm.isActive,
+              };
+              if (this.userForm.firstName) body.firstName = this.userForm.firstName;
+              if (this.userForm.lastName) body.lastName = this.userForm.lastName;
+            }
+
+            var response = await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token,
+              },
+              body: JSON.stringify(body),
+            });
+
+            var data = await response.json();
+
+            if (data.error) {
+              throw new Error(data.error.message || "Speichern fehlgeschlagen");
+            }
+
+            Alpine.store("notifications").add("success", this.editingUser ? "Benutzer aktualisiert" : "Benutzer erstellt");
+            this.closeUserModal();
+            await this.loadUsers();
+          } catch (err) {
+            console.error("Save failed:", err);
+            Alpine.store("notifications").add("error", "Fehler: " + err.message);
+          } finally {
+            this.saving = false;
           }
         },
       };
