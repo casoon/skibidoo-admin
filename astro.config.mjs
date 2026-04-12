@@ -1,7 +1,7 @@
 import { defineConfig } from "astro/config";
-import tailwind from "@astrojs/tailwind";
 import alpinejs from "@astrojs/alpinejs";
 import cloudflare from "@astrojs/cloudflare";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   output: "server",
@@ -12,12 +12,12 @@ export default defineConfig({
     },
   }),
   integrations: [
-    tailwind(),
     alpinejs({
       entrypoint: "/src/lib/alpine.ts",
     }),
   ],
   vite: {
+    plugins: [tailwindcss()],
     resolve: {
       alias: {
         "@": "/src",

@@ -1,6 +1,5 @@
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import superjson from "superjson";
-import type { AppRouter } from "skibidoo-core/trpc";
+import type { AppRouter } from "@skibidoo/core/trpc";
 
 const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
@@ -19,7 +18,6 @@ export const trpc = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${API_URL}/trpc`,
-      transformer: superjson,
       headers() {
         const token = getAuthToken();
         return token ? { Authorization: `Bearer ${token}` } : {};

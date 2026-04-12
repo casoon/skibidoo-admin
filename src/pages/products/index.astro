@@ -67,15 +67,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
               <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900" x-text="formatPrice(product.price)"></td>
               <td class="whitespace-nowrap px-6 py-4 text-sm" :class="product.stock < 10 ? 'text-red-600' : 'text-gray-500'" x-text="product.stock"></td>
               <td class="whitespace-nowrap px-6 py-4">
-                <span
-                  class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
-                  :class="{
-                    'bg-green-100 text-green-800': product.status === 'active',
-                    'bg-yellow-100 text-yellow-800': product.status === 'draft',
-                    'bg-gray-100 text-gray-800': product.status === 'archived'
-                  }"
-                  x-text="product.status"
-                ></span>
+                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5" :class="{ 'bg-green-100 text-green-800': product.status === 'active', 'bg-yellow-100 text-yellow-800': product.status === 'draft', 'bg-gray-100 text-gray-800': product.status === 'archived' }" x-text="product.status"></span>
               </td>
               <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                 <a :href="`/products/${product.id}`" class="text-primary-600 hover:text-primary-900">Bearbeiten</a>
@@ -111,7 +103,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
     </div>
   </div>
 
-  <script>
+  <script is:inline>
     function productList() {
       return {
         products: [],
@@ -154,11 +146,11 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
           }
         },
 
-        formatPrice(cents: number) {
+        formatPrice(cents) {
           return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(cents / 100);
         },
 
-        async deleteProduct(id: string) {
+        async deleteProduct(id) {
           if (!confirm("Produkt wirklich löschen?")) return;
           try {
             const API_URL = import.meta.env?.PUBLIC_API_URL || "http://localhost:3000";

@@ -131,15 +131,13 @@ import SettingsLayout from "@/layouts/SettingsLayout.astro";
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">Betreff</label>
             <input type="text" x-model="editingTemplate.subject" class="w-full rounded border-gray-300 text-sm" />
-            <p class="mt-1 text-xs text-gray-500">Variablen: {{shop_name}}, {{order_number}}, {{customer_name}}</p>
+            <p class="mt-1 text-xs text-gray-500">{"Variablen: {{shop_name}}, {{order_number}}, {{customer_name}}"}</p>
           </div>
 
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">Inhalt (HTML)</label>
             <textarea x-model="editingTemplate.body" rows="15" class="w-full rounded border-gray-300 font-mono text-sm"></textarea>
-            <p class="mt-1 text-xs text-gray-500">
-              Variablen: {{shop_name}}, {{shop_url}}, {{customer_name}}, {{customer_email}}, {{order_number}}, {{order_date}}, {{order_total}}, {{order_items}}, {{shipping_address}}, {{tracking_number}}, {{tracking_url}}
-            </p>
+            <p class="mt-1 text-xs text-gray-500">{"Variablen: {{shop_name}}, {{shop_url}}, {{customer_name}}, {{customer_email}}, {{order_number}}, {{order_date}}, {{order_total}}, {{order_items}}, {{shipping_address}}, {{tracking_number}}, {{tracking_url}}"}</p>
           </div>
         </div>
 
@@ -213,7 +211,7 @@ import SettingsLayout from "@/layouts/SettingsLayout.astro";
     </div>
   </div>
 
-  <script>
+  <script is:inline>
     function emailSettings() {
       return {
         smtp: {

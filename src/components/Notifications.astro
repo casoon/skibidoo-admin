@@ -1,25 +1,69 @@
 ---
 ---
 
-<div
-  class="fixed bottom-4 right-4 z-50 space-y-2"
-  x-data
->
-  <template x-for="notification in $store.notifications.items" :key="notification.id">
-    <div
-      class="flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg"
-      :class="{
-        'bg-green-500 text-white': notification.type === 'success',
-        'bg-red-500 text-white': notification.type === 'error',
-        'bg-blue-500 text-white': notification.type === 'info'
-      }"
-    >
-      <span x-text="notification.message"></span>
-      <button @click="$store.notifications.remove(notification.id)" class="ml-2 hover:opacity-75">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  </template>
-</div>
+<!--
+  Notifications are rendered imperatively via Alpine.effect() in the inline
+  script below. This avoids <template x-for> which causes false-positive
+  TypeScript errors in Astro's language server (the <template> HTML element
+  is not included in astro/astro-jsx.d.ts IntrinsicElements).
+-->
+<div id="notif-container" class="fixed bottom-4 right-4 z-50 space-y-2" aria-live="polite"></div>
+
+<script is:inline>
+  (function () {
+    function typeClass(type) {
+      return type === "success" ? "bg-green-500 text-white"
+           : type === "error"   ? "bg-red-500 text-white"
+                                : "bg-blue-500 text-white";
+    }
+
+    function makeElement(item) {
+      var el = document.createElement("div");
+      el.id = "notif-" + item.id;
+      el.className =
+        "flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg " +
+        typeClass(item.type);
+
+      var text = document.createElement("span");
+      text.textContent = item.message;
+      el.appendChild(text);
+
+      var btn = document.createElement("button");
+      btn.className = "ml-2 hover:opacity-75";
+      btn.setAttribute("aria-label", "Schließen");
+      btn.innerHTML =
+        '<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' +
+        "</svg>";
+      btn.addEventListener("click", function () {
+        Alpine.store("notifications").remove(item.id);
+      });
+      el.appendChild(btn);
+
+      return el;
+    }
+
+    document.addEventListener("alpine:init", function () {
+      var container = document.getElementById("notif-container");
+      if (!container) return;
+
+      Alpine.effect(function () {
+        var items = Alpine.store("notifications").items;
+
+        // Remove stale elements
+        Array.from(container.children).forEach(function (child) {
+          if (!items.some(function (n) { return "notif-" + n.id === child.id; })) {
+            child.remove();
+          }
+        });
+
+        // Append new elements
+        items.forEach(function (item) {
+          if (!document.getElementById("notif-" + item.id)) {
+            container.appendChild(makeElement(item));
+          }
+        });
+      });
+    });
+  })();
+</script>

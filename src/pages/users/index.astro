@@ -60,7 +60,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
                 <td class="whitespace-nowrap px-6 py-4">
                   <span class="inline-flex items-center gap-1 text-sm" :class="user.isActive ? 'text-green-600' : 'text-gray-400'">
                     <span class="h-2 w-2 rounded-full" :class="user.isActive ? 'bg-green-500' : 'bg-gray-300'"></span>
-                    <span x-text="user.isActive ? 'Aktiv' : 'Inaktiv'></span>
+                    <span x-text="user.isActive ? 'Aktiv' : 'Inaktiv'"></span>
                   </span>
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500" x-text="formatDate(user.lastLoginAt)"></td>
