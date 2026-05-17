@@ -4,6 +4,7 @@ import cloudflare from "@astrojs/cloudflare";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
+  trailingSlash: 'always',
   output: "server",
   adapter: cloudflare({
     imageService: "passthrough",
